@@ -60,7 +60,7 @@ class _MapScreenState extends State<MapScreen> {
                 CameraUpdate.newCameraPosition(
                   CameraPosition(
                     target: _origin!.position,
-                    zoom: 14.5,
+                    zoom: 17,
                     tilt: 50.0,
                   ),
                 ),
@@ -77,7 +77,7 @@ class _MapScreenState extends State<MapScreen> {
                 CameraUpdate.newCameraPosition(
                   CameraPosition(
                     target: _destination!.position,
-                    zoom: 14.5,
+                    zoom: 17,
                     tilt: 50.0,
                   ),
                 ),
