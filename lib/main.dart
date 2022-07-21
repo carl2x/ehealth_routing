@@ -1,115 +1,213 @@
 import 'package:flutter/material.dart';
+import 'package:ehealth_routing/directions_model.dart';
+import 'package:ehealth_routing/directions_repository.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Flutter eHealth Routing',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
+        primaryColor: Colors.white,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MapScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
+class MapScreen extends StatefulWidget {
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _MapScreenState createState() => _MapScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _MapScreenState extends State<MapScreen> {
+  static const _initialCameraPosition = CameraPosition(
+    target: LatLng(40.4237, -86.9212),
+    zoom: 12,
+  );
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  late GoogleMapController _googleMapController;
+  Marker? _origin;
+  Marker? _destination;
+  Directions? _info;
+
+  @override
+  void dispose() {
+    _googleMapController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        centerTitle: false,
+        foregroundColor: Colors.black,
+        backgroundColor: Colors.white,
+        title: _origin == null
+            ? const Text('eHealth Routing Map')
+            : const Text('eHealth Map'),
+        actions: [
+          if (_origin != null)
+            TextButton(
+              onPressed: () => _googleMapController.animateCamera(
+                CameraUpdate.newCameraPosition(
+                  CameraPosition(
+                    target: _origin!.position,
+                    zoom: 14.5,
+                    tilt: 50.0,
+                  ),
+                ),
+              ),
+              style: TextButton.styleFrom(
+                primary: Colors.blue,
+                textStyle: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              child: const Text('ORIGIN'),
+            ),
+          if (_destination != null)
+            TextButton(
+              onPressed: () => _googleMapController.animateCamera(
+                CameraUpdate.newCameraPosition(
+                  CameraPosition(
+                    target: _destination!.position,
+                    zoom: 14.5,
+                    tilt: 50.0,
+                  ),
+                ),
+              ),
+              style: TextButton.styleFrom(
+                primary: Colors.red,
+                textStyle: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              child: const Text('DEST'),
+            ),
+          if (_origin != null || _destination != null)
+            TextButton(
+              onPressed: (() {
+                setState(() {
+                  _origin = null;
+                  _destination = null;
+                  _info = null;
+                });
+              }),
+              style: TextButton.styleFrom(
+                primary: Colors.orange,
+                textStyle: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              child: const Text('CLEAR'),
+            ),
+        ],
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+      body: Stack(
+        alignment: Alignment.center,
+        children: [
+          GoogleMap(
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            initialCameraPosition: _initialCameraPosition,
+            onMapCreated: (controller) => _googleMapController = controller,
+            markers: {
+              if (_origin != null) _origin!,
+              if (_destination != null) _destination!
+            },
+            polylines: {
+              if (_info != null)
+                Polyline(
+                  polylineId: const PolylineId('overview_polyline'),
+                  color: Colors.red,
+                  width: 5,
+                  points: _info!.polylinePoints
+                      .map((e) => LatLng(e.latitude, e.longitude))
+                      .toList(),
+                ),
+            },
+            onLongPress: _addMarker,
+          ),
+          if (_info != null)
+            Positioned(
+              top: 20.0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6.0,
+                  horizontal: 12.0,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.yellowAccent,
+                  borderRadius: BorderRadius.circular(20.0),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      offset: Offset(0, 2),
+                      blurRadius: 6.0,
+                    )
+                  ],
+                ),
+                child: Text(
+                  '${_info!.totalDistance}, ${_info!.totalDuration}',
+                  style: const TextStyle(
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
-        ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.black,
+        onPressed: () => _googleMapController.animateCamera(
+          _info != null
+              ? CameraUpdate.newLatLngBounds(_info!.bounds, 100.0)
+              : CameraUpdate.newCameraPosition(_initialCameraPosition),
+        ),
+        child: const Icon(Icons.center_focus_strong),
+      ),
     );
+  }
+
+  void _addMarker(LatLng pos) async {
+    if (_origin == null || (_origin != null && _destination != null)) {
+      // Origin is not set OR Origin/Destination are both set (in which case
+      // resets origin)
+      // Set origin
+      setState(() {
+        _origin = Marker(
+          markerId: const MarkerId('origin'),
+          infoWindow: const InfoWindow(title: 'Origin'),
+          icon:
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          position: pos,
+        );
+        // Reset destination
+        _destination = null;
+
+        // Reset info
+        _info = null;
+      });
+    } else {
+      // Origin is already set
+      // Set destination
+      setState(() {
+        _destination = Marker(
+          markerId: const MarkerId('destination'),
+          infoWindow: const InfoWindow(title: 'Destination'),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          position: pos,
+        );
+      });
+
+      // Get directions
+      final directions = await DirectionsRepository().getDirections(
+          origin: _origin!.position, destination: _destination!.position);
+      setState(() => _info = directions);
+    }
   }
 }

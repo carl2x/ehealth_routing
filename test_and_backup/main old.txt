@@ -1,0 +1,144 @@
+import 'package:ehealth_routing/directions_repository.dart';
+import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+import 'directions_model.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  // This widget is the root of the application.
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'eHealth Routing',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primaryColor: Colors.white,
+      ),
+      home: MapScreen(),
+    );
+  }
+}
+
+class MapScreen extends StatefulWidget {
+  //const MapScreen({Key? key, required this.title}) : super(key: key);
+  //final String title;
+  @override
+  _MapScreenState createState() => _MapScreenState();
+}
+
+class _MapScreenState extends State<MapScreen> {
+  static const _initialCameraPosition = CameraPosition(
+    target: LatLng(40.4237, -86.9212),
+    zoom: 12,
+  );
+
+  late GoogleMapController _googleMapController;
+  Marker _origin = Marker(markerId: const MarkerId('null'));
+  Marker _destination = Marker(markerId: const MarkerId('null'));
+  late Directions _info;
+
+  @override
+  void dispose() {
+    _googleMapController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+          centerTitle: false,
+          foregroundColor: Colors.black,
+          backgroundColor: Colors.white,
+          title: const Text('eHealth Routing'),
+          actions: [
+            if (_origin.markerId.value != 'null')
+              TextButton(
+                  onPressed: () => _googleMapController.animateCamera(
+                      CameraUpdate.newCameraPosition(CameraPosition(
+                          target: _origin.position, zoom: 14.5, tilt: 50.0))),
+                  style: TextButton.styleFrom(
+                    primary: Colors.green,
+                    textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  child: const Text('ORIGIN')),
+            if (_destination.markerId.value != 'null')
+              TextButton(
+                  onPressed: () => _googleMapController.animateCamera(
+                      CameraUpdate.newCameraPosition(CameraPosition(
+                          target: _destination.position,
+                          zoom: 14.5,
+                          tilt: 50.0))),
+                  style: TextButton.styleFrom(
+                    primary: Colors.blue,
+                    textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  child: const Text('DESTINATION'))
+          ]),
+      body: Stack(
+        alignment: Alignment.center,
+        children: [
+          GoogleMap(
+            myLocationButtonEnabled: false,
+            initialCameraPosition: _initialCameraPosition,
+            onMapCreated: (controller) => _googleMapController = controller,
+            markers: {
+              if (_origin.markerId.value != 'null') _origin,
+              if (_destination.markerId.value != 'null') _destination,
+            },
+            onLongPress: _addMarker,
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.black,
+        onPressed: () => _googleMapController.animateCamera(
+          _info != null
+              ? CameraUpdate.newLatLngBounds(_info.bounds, 100.0)
+              : CameraUpdate.newCameraPosition(_initialCameraPosition),
+        ),
+        child: const Icon(Icons.center_focus_strong),
+      ),
+    );
+  }
+
+  void _addMarker(LatLng pos) async {
+    if (_origin.markerId.value == 'null' ||
+        (_origin.markerId.value != 'null' &&
+            _destination.markerId.value != 'null')) {
+      setState(() {
+        _origin = Marker(
+          markerId: const MarkerId('origin'),
+          infoWindow: const InfoWindow(title: 'Origin'),
+          icon:
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          position: pos,
+        );
+        //reset destination
+        _destination = Marker(markerId: const MarkerId('null'));
+        _info = null as Directions;
+      });
+    } else {
+      setState(() {
+        _destination = Marker(
+          markerId: const MarkerId('destination'),
+          infoWindow: const InfoWindow(title: 'Destination'),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+          position: pos,
+        );
+      });
+
+      //Get directions
+      final directions = await DirectionsRepository().getDirections(
+          origin: _origin.position, destination: _destination.position);
+      setState(() => _info = directions);
+    }
+  }
+}
