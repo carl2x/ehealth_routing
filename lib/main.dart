@@ -40,6 +40,7 @@ class _MapScreenState extends State<MapScreen> {
   Marker? _origin;
   Marker? _destination;
   Directions? _info;
+  List<Marker>? _markers;
 
   @override
   void dispose() {
@@ -119,7 +120,7 @@ class _MapScreenState extends State<MapScreen> {
             onMapCreated: (controller) => _googleMapController = controller,
             markers: {
               if (_origin != null) _origin!,
-              if (_destination != null) _destination!
+              if (_destination != null) _destination!,
             },
             polylines: {
               if (_info != null)
@@ -189,6 +190,13 @@ class _MapScreenState extends State<MapScreen> {
           icon:
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
           position: pos,
+          draggable: true,
+          onDragEnd: ((LatLng newPos) {
+            setState(() {
+              _origin = _origin!.copyWith(positionParam: newPos);
+              _getDirections();
+            });
+          }),
         );
         // Reset destination
         _destination = null;
@@ -205,13 +213,23 @@ class _MapScreenState extends State<MapScreen> {
           infoWindow: const InfoWindow(title: 'Destination'),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           position: pos,
+          draggable: true,
+          onDragEnd: ((LatLng newPos) {
+            setState(() {
+              _destination = _destination!.copyWith(positionParam: newPos);
+              _getDirections();
+            });
+          }),
         );
       });
-
-      // Get directions
-      final directions = await DirectionsRepository().getDirections(
-          origin: _origin!.position, destination: _destination!.position);
-      setState(() => _info = directions);
     }
+    _getDirections();
+  }
+
+  void _getDirections() async {
+    // Get directions
+    final directions = await DirectionsRepository().getDirections(
+        origin: _origin!.position, destination: _destination!.position);
+    setState(() => _info = directions);
   }
 }
