@@ -45,7 +45,6 @@ class _MapScreenState extends State<MapScreen> {
   final Map<PolylineId, Polyline> _polylines = <PolylineId, Polyline>{};
   final Map<String, Map<String, double>> _trips =
       <String, Map<String, double>>{};
-  bool structureRuined = false;
   int _feet = 0;
   double _miles = 0.0;
   int _days = 0;
@@ -93,19 +92,7 @@ class _MapScreenState extends State<MapScreen> {
           if (_markers.isNotEmpty)
             TextButton(
               onPressed: (() {
-                setState(() {
-                  _info = null;
-                  _currMarker = null;
-                  structureRuined = false;
-                  markerNumber = 1;
-                  _markers.clear();
-                  _polylines.clear();
-                  _days = 0;
-                  _hours = 0;
-                  _mins = 0;
-                  _miles = 0.0;
-                  _feet = 0;
-                });
+                _clear();
               }),
               style: TextButton.styleFrom(
                 primary: Colors.black,
@@ -187,107 +174,66 @@ class _MapScreenState extends State<MapScreen> {
             title: 'Marker #${currMarkerID.value}',
             onTap: () {
               setState(() {
+                // Exception
                 if (_markers.length == 1) {
                   _markers.removeWhere((key, value) => key == currMarkerID);
                 }
                 // When there are at least two markers
                 if (_markers.length >= 2) {
                   // Case One: No Previous Marker (1st Marker in route)
-                  if (!structureRuined &&
-                      !_markers.containsKey(MarkerId(
-                          (int.parse(currMarkerID.value) - 1).toString()))) {
+                  if (!_markers.containsKey(MarkerId(
+                          (int.parse(currMarkerID.value) - 1).toString())) &&
+                      _polylines[PolylineId(currMarkerID.value)] != null) {
                     // Remove marker
                     _markers.removeWhere((key, value) => key == currMarkerID);
-
                     _polylines.removeWhere(
                         (key, value) => key == PolylineId(currMarkerID.value));
 
-                    // Subtract trip info from total route
-                    _days -= _trips[currMarkerID.value]!["days"]!.toInt();
-                    _hours -= _trips[currMarkerID.value]!["hours"]!.toInt();
-                    _mins -= _trips[currMarkerID.value]!["mins"]!.toInt();
-                    _miles -= _trips[currMarkerID.value]!["miles"]!;
-                    _feet -= _trips[currMarkerID.value]!["feet"]!.toInt();
-                    // Remove trip
-                    _trips
-                        .removeWhere((key, value) => key == currMarkerID.value);
+                    _removeCurrentTrip(currMarkerID.value);
                     _formatDistanceTime();
                   }
                   // Case Two: No After Markers (last Marker in route)
-                  else if (!structureRuined &&
-                      !_markers.containsKey(MarkerId(
-                          (int.parse(currMarkerID.value) + 1).toString()))) {
+                  else if (!_markers.containsKey(MarkerId(
+                      (int.parse(currMarkerID.value) + 1).toString()))) {
                     // Remove marker
                     _markers.removeWhere((key, value) => key == currMarkerID);
-
+                    int prevMarkerNum = int.parse(currMarkerID.value) - 1;
+                    while (!_markers
+                        .containsKey(MarkerId(prevMarkerNum.toString()))) {
+                      prevMarkerNum--;
+                    }
                     _polylines.removeWhere((key, value) =>
-                        key ==
-                        PolylineId(
-                            (int.parse(currMarkerID.value) - 1).toString()));
+                        key == PolylineId(prevMarkerNum.toString()));
 
-                    // Subtract trip info from total route
-                    _days -= _trips[(int.parse(currMarkerID.value) - 1)
-                            .toString()]!["days"]!
-                        .toInt();
-                    _hours -= _trips[(int.parse(currMarkerID.value) - 1)
-                            .toString()]!["hours"]!
-                        .toInt();
-                    _mins -= _trips[(int.parse(currMarkerID.value) - 1)
-                            .toString()]!["mins"]!
-                        .toInt();
-                    _miles -= _trips[(int.parse(currMarkerID.value) - 1)
-                        .toString()]!["miles"]!;
-                    _feet -= _trips[(int.parse(currMarkerID.value) - 1)
-                            .toString()]!["feet"]!
-                        .toInt();
-                    // Remove trip
-                    _trips.removeWhere((key, value) =>
-                        key == (int.parse(currMarkerID.value) - 1).toString());
+                    _removeCurrentTrip(prevMarkerNum.toString());
                     _formatDistanceTime();
                   }
                   // Case Three: Has Both Previous and After Markers
                   else {
-                    structureRuined = true;
                     // Remove marker
                     _markers.removeWhere((key, value) => key == currMarkerID);
-                    int prevMarker = int.parse(currMarkerID.value) - 1;
+                    int prevMarkerNum = int.parse(currMarkerID.value) - 1;
                     while (!_markers
-                        .containsKey(MarkerId(prevMarker.toString()))) {
-                      prevMarker--;
+                        .containsKey(MarkerId(prevMarkerNum.toString()))) {
+                      prevMarkerNum--;
                     }
+
                     _polylines.removeWhere((key, value) =>
-                        key == PolylineId(prevMarker.toString()));
+                        key == PolylineId(prevMarkerNum.toString()));
                     _polylines.removeWhere(
                         (key, value) => key == PolylineId(currMarkerID.value));
 
-                    // Subtract trip info from total route
-                    _days -= _trips[prevMarker.toString()]!["days"]!.toInt();
-                    _hours -= _trips[prevMarker.toString()]!["hours"]!.toInt();
-                    _mins -= _trips[prevMarker.toString()]!["mins"]!.toInt();
-                    _miles -= _trips[prevMarker.toString()]!["miles"]!;
-                    _feet -= _trips[prevMarker.toString()]!["feet"]!.toInt();
-                    // Remove trip
-                    _trips.remove((key, value) => key == prevMarker.toString());
-
-                    // Subtract trip info from total route
-                    _days -= _trips[currMarkerID.value]!["days"]!.toInt();
-                    _hours -= _trips[currMarkerID.value]!["hours"]!.toInt();
-                    _mins -= _trips[currMarkerID.value]!["mins"]!.toInt();
-                    _miles -= _trips[currMarkerID.value]!["miles"]!;
-                    _feet -= _trips[currMarkerID.value]!["feet"]!.toInt();
-                    // Remove trip
-                    _trips
-                        .removeWhere((key, value) => key == currMarkerID.value);
+                    _removeCurrentTrip(prevMarkerNum.toString());
+                    _removeCurrentTrip(currMarkerID.value);
 
                     _getDirections(
-                        MarkerId(prevMarker.toString()),
+                        MarkerId(prevMarkerNum.toString()),
                         MarkerId(
                             (int.parse(currMarkerID.value) + 1).toString()));
                   }
                 }
                 if (_markers.isEmpty) {
-                  markerNumber = 1;
-                  structureRuined = false;
+                  _clear();
                 }
               });
             },
@@ -307,14 +253,7 @@ class _MapScreenState extends State<MapScreen> {
                 _polylines.removeWhere(
                     (key, value) => key == PolylineId(currMarkerID.value));
 
-                // Subtract trip info from total route
-                _days -= _trips[currMarkerID.value]!["days"]!.toInt();
-                _hours -= _trips[currMarkerID.value]!["hours"]!.toInt();
-                _mins -= _trips[currMarkerID.value]!["mins"]!.toInt();
-                _miles -= _trips[currMarkerID.value]!["miles"]!;
-                _feet -= _trips[currMarkerID.value]!["feet"]!.toInt();
-                // Remove trip
-                _trips.removeWhere((key, value) => key == currMarkerID.value);
+                _removeCurrentTrip(currMarkerID.value);
 
                 // Generate new trip in route
                 _getDirections(currMarkerID,
@@ -327,24 +266,8 @@ class _MapScreenState extends State<MapScreen> {
                     key ==
                     PolylineId((int.parse(currMarkerID.value) - 1).toString()));
 
-                // Subtract trip info from total route
-                _days -= _trips[(int.parse(currMarkerID.value) - 1)
-                        .toString()]!["days"]!
-                    .toInt();
-                _hours -= _trips[(int.parse(currMarkerID.value) - 1)
-                        .toString()]!["hours"]!
-                    .toInt();
-                _mins -= _trips[(int.parse(currMarkerID.value) - 1)
-                        .toString()]!["mins"]!
-                    .toInt();
-                _miles -= _trips[
-                    (int.parse(currMarkerID.value) - 1).toString()]!["miles"]!;
-                _feet -= _trips[(int.parse(currMarkerID.value) - 1)
-                        .toString()]!["feet"]!
-                    .toInt();
-                // Remove trip
-                _trips.removeWhere((key, value) =>
-                    key == (int.parse(currMarkerID.value) - 1).toString());
+                _removeCurrentTrip(
+                    (int.parse(currMarkerID.value) - 1).toString());
 
                 // Generate new trip in route
                 _getDirections(
@@ -359,33 +282,9 @@ class _MapScreenState extends State<MapScreen> {
                 _polylines.removeWhere(
                     (key, value) => key == PolylineId(currMarkerID.value));
 
-                // Subtract trip info from total route
-                _days -= _trips[(int.parse(currMarkerID.value) - 1)
-                        .toString()]!["days"]!
-                    .toInt();
-                _hours -= _trips[(int.parse(currMarkerID.value) - 1)
-                        .toString()]!["hours"]!
-                    .toInt();
-                _mins -= _trips[(int.parse(currMarkerID.value) - 1)
-                        .toString()]!["mins"]!
-                    .toInt();
-                _miles -= _trips[
-                    (int.parse(currMarkerID.value) - 1).toString()]!["miles"]!;
-                _feet -= _trips[(int.parse(currMarkerID.value) - 1)
-                        .toString()]!["feet"]!
-                    .toInt();
-                // Remove trip
-                _trips.remove((key, value) =>
-                    key == (int.parse(currMarkerID.value) - 1).toString());
-
-                // Subtract trip info from total route
-                _days -= _trips[currMarkerID.value]!["days"]!.toInt();
-                _hours -= _trips[currMarkerID.value]!["hours"]!.toInt();
-                _mins -= _trips[currMarkerID.value]!["mins"]!.toInt();
-                _miles -= _trips[currMarkerID.value]!["miles"]!;
-                _feet -= _trips[currMarkerID.value]!["feet"]!.toInt();
-                // Remove trip
-                _trips.removeWhere((key, value) => key == currMarkerID.value);
+                _removeCurrentTrip(
+                    (int.parse(currMarkerID.value) - 1).toString());
+                _removeCurrentTrip(currMarkerID.value);
 
                 // Generate new trips in route
                 _getDirections(
@@ -408,6 +307,32 @@ class _MapScreenState extends State<MapScreen> {
     }
     // Move on to the next marker
     markerNumber++;
+  }
+
+  void _removeCurrentTrip(String currMarkerIDValue) {
+    // Subtract trip info from total route
+    _days -= _trips[currMarkerIDValue]!["days"]!.toInt();
+    _hours -= _trips[currMarkerIDValue]!["hours"]!.toInt();
+    _mins -= _trips[currMarkerIDValue]!["mins"]!.toInt();
+    _miles -= _trips[currMarkerIDValue]!["miles"]!;
+    _feet -= _trips[currMarkerIDValue]!["feet"]!.toInt();
+    // Remove trip
+    _trips.removeWhere((key, value) => key == currMarkerIDValue);
+  }
+
+  void _clear() {
+    setState(() {
+      _info = null;
+      _currMarker = null;
+      markerNumber = 1;
+      _markers.clear();
+      _polylines.clear();
+      _days = 0;
+      _hours = 0;
+      _mins = 0;
+      _miles = 0.0;
+      _feet = 0;
+    });
   }
 
   void _getDirections(MarkerId markerIdStart, MarkerId markerIdEnd) async {
