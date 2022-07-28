@@ -1,6 +1,6 @@
 # ehealth_routing
 
-A new Flutter project.
+Flutter app for eHealth Routing.
 
 ## Getting Started
 
