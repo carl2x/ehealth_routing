@@ -65,8 +65,10 @@ class _MapScreenState extends State<MapScreen> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
-        foregroundColor: Colors.black,
-        backgroundColor: Colors.white,
+        titleTextStyle:
+            const TextStyle(fontSize: 22.0, fontWeight: FontWeight.w500),
+        foregroundColor: Colors.white,
+        backgroundColor: Colors.redAccent,
         title: _currMarker == null
             ? const Text('eHealth Routing')
             : const Text('eHealth'),
@@ -77,39 +79,41 @@ class _MapScreenState extends State<MapScreen> {
                 CameraUpdate.newCameraPosition(
                   CameraPosition(
                     target: _currMarker!.position,
-                    zoom: 17,
+                    zoom: 16,
                     tilt: 50.0,
                   ),
                 ),
               ),
               style: TextButton.styleFrom(
-                primary: Colors.blue,
-                textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                primary: Colors.white,
+                textStyle: const TextStyle(fontWeight: FontWeight.w700),
               ),
               child: const Text('ZOOM ON MARKER'),
             ),
-          TextButton(
-            onPressed: (() {
-              setState(() {
-                _info = null;
-                _currMarker = null;
-                structureRuined = false;
-                markerNumber = 1;
-                _markers.clear();
-                _polylines.clear();
-                _days = 0;
-                _hours = 0;
-                _mins = 0;
-                _miles = 0.0;
-                _feet = 0;
-              });
-            }),
-            style: TextButton.styleFrom(
-              primary: Colors.orange,
-              textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          if (_markers.isNotEmpty)
+            TextButton(
+              onPressed: (() {
+                setState(() {
+                  _info = null;
+                  _currMarker = null;
+                  structureRuined = false;
+                  markerNumber = 1;
+                  _markers.clear();
+                  _polylines.clear();
+                  _days = 0;
+                  _hours = 0;
+                  _mins = 0;
+                  _miles = 0.0;
+                  _feet = 0;
+                });
+              }),
+              style: TextButton.styleFrom(
+                primary: Colors.black,
+                backgroundColor: Colors.yellow,
+                textStyle: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              child: const Text('CLEAR'),
             ),
-            child: const Text('CLEAR'),
-          ),
         ],
       ),
       body: Stack(
@@ -169,7 +173,6 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _addMarker(LatLng pos) async {
-    _currMarker = null;
     MarkerId currMarkerID = MarkerId(markerNumber.toString());
     Marker? marker;
     setState(() {
@@ -397,6 +400,7 @@ class _MapScreenState extends State<MapScreen> {
       );
       _markers[currMarkerID] = marker as Marker;
     });
+    _currMarker = marker;
     // Only get direction if there are more than two points on map
     if (_markers.length >= 2) {
       _getDirections(MarkerId((int.parse(currMarkerID.value) - 1).toString()),
@@ -471,7 +475,7 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {
       currPoly = Polyline(
         polylineId: currPolyID,
-        color: Colors.red,
+        color: Colors.redAccent,
         width: 5,
         points: _info!.polylinePoints
             .map((e) => LatLng(e.latitude, e.longitude))
