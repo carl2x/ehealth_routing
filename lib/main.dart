@@ -108,7 +108,8 @@ class _MapScreenState extends State<MapScreen> {
         children: [
           GoogleMap(
             myLocationButtonEnabled: false,
-            zoomControlsEnabled: true,
+            zoomControlsEnabled: false,
+            compassEnabled: true,
             trafficEnabled: true,
             initialCameraPosition: _initialCameraPosition,
             onMapCreated: (controller) => _googleMapController = controller,
