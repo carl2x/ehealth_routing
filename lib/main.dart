@@ -42,6 +42,8 @@ class _MapScreenState extends State<MapScreen> {
   Marker? _currMarker;
   Directions? _info;
   Position? _currentPosition;
+  bool _trafficEnabled = false;
+  bool _elevatedPressed = false;
 
   var _markerNumber = 1;
   final Map<MarkerId, Marker> _markers = <MarkerId, Marker>{};
@@ -53,8 +55,8 @@ class _MapScreenState extends State<MapScreen> {
   int _days = 0;
   int _hours = 0;
   int _mins = 0;
-  String distanceText = '';
-  String durationText = '';
+  String _distanceText = '';
+  String _durationText = '';
 
   @override
   void dispose() {
@@ -65,9 +67,49 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
+    _determinePosition();
     _getCurrentLocation();
   }
 
+  Future<Position> _determinePosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Test if location services are enabled.
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      // Location services are not enabled don't continue
+      // accessing the position and request users of the
+      // App to enable the location services.
+      return Future.error('Location services are disabled.');
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        // Permissions are denied, next time you could try
+        // requesting permissions again (this is also where
+        // Android's shouldShowRequestPermissionRationale
+        // returned true. According to Android guidelines
+        // your App should show an explanatory UI now.
+        return Future.error('Location permissions are denied');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      // Permissions are denied forever, handle appropriately.
+      return Future.error(
+          'Location permissions are permanently denied, we cannot request permissions.');
+    }
+
+    // When we reach here, permissions are granted and we can
+    // continue accessing the position of the device.
+    return await Geolocator.getCurrentPosition();
+  }
+
+  // This function uses the geolocator package to get current location
+  // and also updates the camera.
   _getCurrentLocation() async {
     await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
         .then((Position position) async {
@@ -75,22 +117,18 @@ class _MapScreenState extends State<MapScreen> {
         // Store the position in the variable
         _currentPosition = position;
 
-        print('CURRENT POS: $_currentPosition');
-
         // For moving the camera to current location
         _mapController.animateCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
               target: LatLng(position.latitude, position.longitude),
-              zoom: 18.0,
+              zoom: 15.0,
             ),
           ),
         );
       });
       //await _getAddress();
-    }).catchError((e) {
-      print(e);
-    });
+    }).catchError((e) {});
   }
 
   void _addMarker(LatLng pos) async {
@@ -371,12 +409,12 @@ class _MapScreenState extends State<MapScreen> {
 
   void _formatDistanceTime() {
     if ((_feet + 5280 * _miles) < 1000) {
-      distanceText = "$_feet ft";
+      _distanceText = "$_feet ft";
     } else {
-      distanceText =
+      _distanceText =
           "${((_feet + 5280 * _miles) / 5280).toStringAsFixed(1)} mi";
     }
-    durationText = '';
+    _durationText = '';
     if (_mins >= 60) {
       _mins = _mins % 60;
       _hours += 1;
@@ -386,16 +424,16 @@ class _MapScreenState extends State<MapScreen> {
       _days += 1;
     }
     if (_days == 1) {
-      durationText += " $_days day";
+      _durationText += " $_days day";
     }
     if (_days > 1) {
-      durationText += " $_days days";
+      _durationText += " $_days days";
     }
     if (_hours > 0) {
-      durationText += " $_hours hr";
+      _durationText += " $_hours hr";
     }
     if (_mins > 0) {
-      durationText += " $_mins min";
+      _durationText += " $_mins min";
     }
   }
 
@@ -418,7 +456,7 @@ class _MapScreenState extends State<MapScreen> {
                 CameraUpdate.newCameraPosition(
                   CameraPosition(
                     target: _currMarker!.position,
-                    zoom: 16,
+                    zoom: 17,
                     tilt: 50.0,
                   ),
                 ),
@@ -443,140 +481,128 @@ class _MapScreenState extends State<MapScreen> {
             ),
         ],
       ),
-      body: Stack(
-        alignment: Alignment.center,
-        children: [
-          GoogleMap(
-            mapType: MapType.normal,
-            myLocationEnabled: false,
-            myLocationButtonEnabled: false,
-            zoomGesturesEnabled: true,
-            zoomControlsEnabled: false,
-            compassEnabled: true,
-            trafficEnabled: true,
-            initialCameraPosition: _initialCameraPosition,
-            onMapCreated: (controller) => _mapController = controller,
-            markers: Set<Marker>.of(_markers.values),
-            polylines: Set<Polyline>.of(_polylines.values),
-            onLongPress: _addMarker,
-          ),
-          if (_info != null && (_miles > 0 || _feet > 0))
-            Positioned(
-              top: 20.0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6.0,
-                  horizontal: 12.0,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.yellowAccent,
-                  borderRadius: BorderRadius.circular(20.0),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black26,
-                      offset: Offset(0, 2),
-                      blurRadius: 6.0,
-                    )
-                  ],
-                ),
-                child: Text(
-                  "$distanceText,$durationText",
-                  style: const TextStyle(
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 10.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    ClipOval(
-                      child: Material(
-                        color: Colors.white, // button color
-                        child: InkWell(
-                          splashColor: Colors.blue.shade100, // inkwell color
-                          child: const SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: Icon(Icons.add),
-                          ),
-                          onTap: () {
-                            _mapController.animateCamera(
-                              CameraUpdate.zoomIn(),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ClipOval(
-                      child: Material(
-                        color: Colors.white, // button color
-                        child: InkWell(
-                          splashColor: Colors.blue.shade100, // inkwell color
-                          child: const SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: Icon(Icons.remove),
-                          ),
-                          onTap: () {
-                            _mapController.animateCamera(
-                              CameraUpdate.zoomOut(),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ClipOval(
-                      child: Material(
-                        color: Colors.orange.shade100, // button color
-                        child: InkWell(
-                          splashColor: Colors.orange, // inkwell color
-                          child: const SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: Icon(Icons.my_location),
-                          ),
-                          onTap: () {
-                            _mapController.animateCamera(
-                              CameraUpdate.newCameraPosition(
-                                CameraPosition(
-                                  target: LatLng(
-                                    _currentPosition!.latitude,
-                                    _currentPosition!.longitude,
-                                  ),
-                                  zoom: 18.0,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          )
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.black,
-        onPressed: () => _mapController.animateCamera(
-          _info != null
-              ? CameraUpdate.newLatLngBounds(_info!.bounds, 100.0)
-              : CameraUpdate.newCameraPosition(_initialCameraPosition),
+      body: Stack(alignment: Alignment.center, children: [
+        GoogleMap(
+          mapType: MapType.normal,
+          myLocationEnabled: true,
+          myLocationButtonEnabled: false,
+          zoomGesturesEnabled: true,
+          zoomControlsEnabled: false,
+          compassEnabled: true,
+          trafficEnabled: _trafficEnabled,
+          initialCameraPosition: _initialCameraPosition,
+          onMapCreated: (controller) => _mapController = controller,
+          markers: Set<Marker>.of(_markers.values),
+          polylines: Set<Polyline>.of(_polylines.values),
+          onLongPress: _addMarker,
         ),
-        child: const Icon(Icons.center_focus_strong),
-      ),
+        // Route distance and duration display
+        if (_info != null && (_miles > 0 || _feet > 0))
+          Positioned(
+            top: 20.0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                vertical: 6.0,
+                horizontal: 12.0,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.yellowAccent,
+                borderRadius: BorderRadius.circular(20.0),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black26,
+                    offset: Offset(0, 2),
+                    blurRadius: 6.0,
+                  )
+                ],
+              ),
+              child: Text(
+                "$_distanceText,$_durationText",
+                style: const TextStyle(
+                  fontSize: 18.0,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        // Button stack
+        Align(
+          alignment: Alignment.centerLeft,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 10, bottom: 30),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: <Widget>[
+                  FloatingActionButton.small(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.black,
+                    onPressed: () {
+                      _mapController.animateCamera(CameraUpdate.zoomIn());
+                    },
+                    child: const Icon(Icons.add),
+                  ),
+                  const SizedBox(height: 0),
+                  FloatingActionButton.small(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.black,
+                    onPressed: () {
+                      _mapController.animateCamera(CameraUpdate.zoomOut());
+                    },
+                    child: const Icon(Icons.remove),
+                  ),
+                  const SizedBox(height: 15),
+                  FloatingActionButton(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.black,
+                    onPressed: () => _mapController.animateCamera(
+                      _info != null
+                          ? CameraUpdate.newLatLngBounds(_info!.bounds, 100.0)
+                          : CameraUpdate.newCameraPosition(
+                              _initialCameraPosition),
+                    ),
+                    child: const Icon(Icons.center_focus_strong),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 10, bottom: 10),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ElevatedButton(
+                    style: _elevatedPressed
+                        ? ElevatedButton.styleFrom(primary: Colors.blue)
+                        : ElevatedButton.styleFrom(primary: Colors.blueGrey),
+                    onPressed: () {
+                      setState(() {
+                        _elevatedPressed = !_elevatedPressed;
+                        _trafficEnabled = !_trafficEnabled;
+                      });
+                    },
+                    child: const Icon(Icons.traffic_rounded),
+                  ),
+                  const SizedBox(height: 5),
+                  FloatingActionButton(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.black,
+                    onPressed: () {
+                      _getCurrentLocation();
+                    },
+                    child: const Icon(Icons.my_location),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ]),
     );
   }
 }
