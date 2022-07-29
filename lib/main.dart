@@ -40,7 +40,7 @@ class _MapScreenState extends State<MapScreen> {
   late GoogleMapController _googleMapController;
   Marker? _currMarker;
   Directions? _info;
-  var markerNumber = 1;
+  var _markerNumber = 1;
   final Map<MarkerId, Marker> _markers = <MarkerId, Marker>{};
   final Map<PolylineId, Polyline> _polylines = <PolylineId, Polyline>{};
   final Map<String, Map<String, double>> _trips =
@@ -161,7 +161,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _addMarker(LatLng pos) async {
-    MarkerId currMarkerID = MarkerId(markerNumber.toString());
+    MarkerId currMarkerID = MarkerId(_markerNumber.toString());
     Marker? marker;
     setState(() {
       marker = Marker(
@@ -185,7 +185,7 @@ class _MapScreenState extends State<MapScreen> {
                   bool prevFound = false;
                   bool nextFound = false;
                   int prevMarkerNum = int.parse(currMarkerID.value) - 1;
-                  for (int i = 0; i < _markers.length; i++) {
+                  for (int i = 0; i < _markerNumber - 1; i++) {
                     if (_markers
                         .containsKey(MarkerId(prevMarkerNum.toString()))) {
                       prevFound = true;
@@ -194,7 +194,7 @@ class _MapScreenState extends State<MapScreen> {
                     prevMarkerNum--;
                   }
                   int nextMarkerNum = int.parse(currMarkerID.value) + 1;
-                  for (int i = 0; i < _markers.length; i++) {
+                  for (int i = 0; i < _markerNumber - 1; i++) {
                     if (_markers
                         .containsKey(MarkerId(nextMarkerNum.toString()))) {
                       nextFound = true;
@@ -259,7 +259,7 @@ class _MapScreenState extends State<MapScreen> {
               bool prevFound = false;
               bool nextFound = false;
               int prevMarkerNum = int.parse(currMarkerID.value) - 1;
-              for (int i = 0; i < _markers.length; i++) {
+              for (int i = 0; i < _markerNumber - 1; i++) {
                 if (_markers.containsKey(MarkerId(prevMarkerNum.toString()))) {
                   prevFound = true;
                   break;
@@ -267,7 +267,7 @@ class _MapScreenState extends State<MapScreen> {
                 prevMarkerNum--;
               }
               int nextMarkerNum = int.parse(currMarkerID.value) + 1;
-              for (int i = 0; i < _markers.length; i++) {
+              for (int i = 0; i < _markerNumber - 1; i++) {
                 if (_markers.containsKey(MarkerId(nextMarkerNum.toString()))) {
                   nextFound = true;
                   break;
@@ -330,7 +330,7 @@ class _MapScreenState extends State<MapScreen> {
       _getDirections(MarkerId(prevMarkerNum.toString()), currMarkerID);
     }
     // Move on to the next marker
-    markerNumber++;
+    _markerNumber++;
   }
 
   void _removeCurrentTrip(String currMarkerIDValue) {
@@ -348,7 +348,7 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {
       if (clearMarker) {
         _currMarker = null;
-        markerNumber = 1;
+        _markerNumber = 1;
         _markers.clear();
       }
       _info = null;
