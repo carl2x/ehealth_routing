@@ -92,7 +92,7 @@ class _MapScreenState extends State<MapScreen> {
           if (_markers.isNotEmpty)
             TextButton(
               onPressed: (() {
-                _clear();
+                _clear(true);
               }),
               style: TextButton.styleFrom(
                 primary: Colors.black,
@@ -232,8 +232,11 @@ class _MapScreenState extends State<MapScreen> {
                             (int.parse(currMarkerID.value) + 1).toString()));
                   }
                 }
+                if (_markers.length == 1) {
+                  _clear(false);
+                }
                 if (_markers.isEmpty) {
-                  _clear();
+                  _clear(true);
                 }
               });
             },
@@ -323,12 +326,14 @@ class _MapScreenState extends State<MapScreen> {
     _trips.removeWhere((key, value) => key == currMarkerIDValue);
   }
 
-  void _clear() {
+  void _clear(bool clearMarker) {
     setState(() {
+      if (clearMarker) {
+        _currMarker = null;
+        markerNumber = 1;
+        _markers.clear();
+      }
       _info = null;
-      _currMarker = null;
-      markerNumber = 1;
-      _markers.clear();
       _polylines.clear();
       _days = 0;
       _hours = 0;
