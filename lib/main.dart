@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ehealth_routing/directions_model.dart';
 import 'package:ehealth_routing/directions_repository.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 
 void main() {
   runApp(const MyApp());
@@ -37,9 +38,11 @@ class _MapScreenState extends State<MapScreen> {
     zoom: 12,
   );
 
-  late GoogleMapController _googleMapController;
+  late GoogleMapController _mapController;
   Marker? _currMarker;
   Directions? _info;
+  Position? _currentPosition;
+
   var _markerNumber = 1;
   final Map<MarkerId, Marker> _markers = <MarkerId, Marker>{};
   final Map<PolylineId, Polyline> _polylines = <PolylineId, Polyline>{};
@@ -55,109 +58,39 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
-    _googleMapController.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        centerTitle: false,
-        titleTextStyle:
-            const TextStyle(fontSize: 22.0, fontWeight: FontWeight.w500),
-        foregroundColor: Colors.white,
-        backgroundColor: Colors.redAccent,
-        title: _currMarker == null
-            ? const Text('eHealth Routing')
-            : const Text('eHealth'),
-        actions: [
-          if (_currMarker != null)
-            TextButton(
-              onPressed: () => _googleMapController.animateCamera(
-                CameraUpdate.newCameraPosition(
-                  CameraPosition(
-                    target: _currMarker!.position,
-                    zoom: 16,
-                    tilt: 50.0,
-                  ),
-                ),
-              ),
-              style: TextButton.styleFrom(
-                primary: Colors.white,
-                textStyle: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              child: const Text('ZOOM ON MARKER'),
+  void initState() {
+    super.initState();
+    _getCurrentLocation();
+  }
+
+  _getCurrentLocation() async {
+    await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
+        .then((Position position) async {
+      setState(() {
+        // Store the position in the variable
+        _currentPosition = position;
+
+        print('CURRENT POS: $_currentPosition');
+
+        // For moving the camera to current location
+        _mapController.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(position.latitude, position.longitude),
+              zoom: 18.0,
             ),
-          if (_markers.isNotEmpty)
-            TextButton(
-              onPressed: (() {
-                _clear(true);
-              }),
-              style: TextButton.styleFrom(
-                primary: Colors.black,
-                backgroundColor: Colors.yellow,
-                textStyle: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              child: const Text('CLEAR'),
-            ),
-        ],
-      ),
-      body: Stack(
-        alignment: Alignment.center,
-        children: [
-          GoogleMap(
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
-            compassEnabled: true,
-            trafficEnabled: true,
-            initialCameraPosition: _initialCameraPosition,
-            onMapCreated: (controller) => _googleMapController = controller,
-            markers: Set<Marker>.of(_markers.values),
-            polylines: Set<Polyline>.of(_polylines.values),
-            onLongPress: _addMarker,
           ),
-          if (_info != null && (_miles > 0 || _feet > 0))
-            Positioned(
-              top: 20.0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6.0,
-                  horizontal: 12.0,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.yellowAccent,
-                  borderRadius: BorderRadius.circular(20.0),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black26,
-                      offset: Offset(0, 2),
-                      blurRadius: 6.0,
-                    )
-                  ],
-                ),
-                child: Text(
-                  "$distanceText,$durationText",
-                  style: const TextStyle(
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.black,
-        onPressed: () => _googleMapController.animateCamera(
-          _info != null
-              ? CameraUpdate.newLatLngBounds(_info!.bounds, 100.0)
-              : CameraUpdate.newCameraPosition(_initialCameraPosition),
-        ),
-        child: const Icon(Icons.center_focus_strong),
-      ),
-    );
+        );
+      });
+      //await _getAddress();
+    }).catchError((e) {
+      print(e);
+    });
   }
 
   void _addMarker(LatLng pos) async {
@@ -464,5 +397,186 @@ class _MapScreenState extends State<MapScreen> {
     if (_mins > 0) {
       durationText += " $_mins min";
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        centerTitle: false,
+        titleTextStyle:
+            const TextStyle(fontSize: 22.0, fontWeight: FontWeight.w500),
+        foregroundColor: Colors.white,
+        backgroundColor: Colors.redAccent,
+        title: _currMarker == null
+            ? const Text('eHealth Routing')
+            : const Text('eHealth'),
+        actions: [
+          if (_currMarker != null)
+            TextButton(
+              onPressed: () => _mapController.animateCamera(
+                CameraUpdate.newCameraPosition(
+                  CameraPosition(
+                    target: _currMarker!.position,
+                    zoom: 16,
+                    tilt: 50.0,
+                  ),
+                ),
+              ),
+              style: TextButton.styleFrom(
+                primary: Colors.white,
+                textStyle: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              child: const Text('ZOOM ON MARKER'),
+            ),
+          if (_markers.isNotEmpty)
+            TextButton(
+              onPressed: (() {
+                _clear(true);
+              }),
+              style: TextButton.styleFrom(
+                primary: Colors.black,
+                backgroundColor: Colors.yellow,
+                textStyle: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              child: const Text('CLEAR'),
+            ),
+        ],
+      ),
+      body: Stack(
+        alignment: Alignment.center,
+        children: [
+          GoogleMap(
+            mapType: MapType.normal,
+            myLocationEnabled: false,
+            myLocationButtonEnabled: false,
+            zoomGesturesEnabled: true,
+            zoomControlsEnabled: false,
+            compassEnabled: true,
+            trafficEnabled: true,
+            initialCameraPosition: _initialCameraPosition,
+            onMapCreated: (controller) => _mapController = controller,
+            markers: Set<Marker>.of(_markers.values),
+            polylines: Set<Polyline>.of(_polylines.values),
+            onLongPress: _addMarker,
+          ),
+          if (_info != null && (_miles > 0 || _feet > 0))
+            Positioned(
+              top: 20.0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6.0,
+                  horizontal: 12.0,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.yellowAccent,
+                  borderRadius: BorderRadius.circular(20.0),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      offset: Offset(0, 2),
+                      blurRadius: 6.0,
+                    )
+                  ],
+                ),
+                child: Text(
+                  "$distanceText,$durationText",
+                  style: const TextStyle(
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 10.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    ClipOval(
+                      child: Material(
+                        color: Colors.white, // button color
+                        child: InkWell(
+                          splashColor: Colors.blue.shade100, // inkwell color
+                          child: const SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Icon(Icons.add),
+                          ),
+                          onTap: () {
+                            _mapController.animateCamera(
+                              CameraUpdate.zoomIn(),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ClipOval(
+                      child: Material(
+                        color: Colors.white, // button color
+                        child: InkWell(
+                          splashColor: Colors.blue.shade100, // inkwell color
+                          child: const SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Icon(Icons.remove),
+                          ),
+                          onTap: () {
+                            _mapController.animateCamera(
+                              CameraUpdate.zoomOut(),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ClipOval(
+                      child: Material(
+                        color: Colors.orange.shade100, // button color
+                        child: InkWell(
+                          splashColor: Colors.orange, // inkwell color
+                          child: const SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Icon(Icons.my_location),
+                          ),
+                          onTap: () {
+                            _mapController.animateCamera(
+                              CameraUpdate.newCameraPosition(
+                                CameraPosition(
+                                  target: LatLng(
+                                    _currentPosition!.latitude,
+                                    _currentPosition!.longitude,
+                                  ),
+                                  zoom: 18.0,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.black,
+        onPressed: () => _mapController.animateCamera(
+          _info != null
+              ? CameraUpdate.newLatLngBounds(_info!.bounds, 100.0)
+              : CameraUpdate.newCameraPosition(_initialCameraPosition),
+        ),
+        child: const Icon(Icons.center_focus_strong),
+      ),
+    );
   }
 }
