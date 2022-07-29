@@ -350,8 +350,8 @@ class _MapScreenState extends State<MapScreen> {
         _currMarker = null;
         _markerNumber = 1;
         _markers.clear();
+        _info = null;
       }
-      _info = null;
       _polylines.clear();
       _days = 0;
       _hours = 0;
