@@ -437,6 +437,8 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    double floatButtonOffset = 16.0;
+
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
@@ -483,7 +485,7 @@ class _MapScreenState extends State<MapScreen> {
         alignment: Alignment.center,
         children: [
           GoogleMap(
-            padding: const EdgeInsets.only(left: 0), // Moves Google Logo
+            padding: const EdgeInsets.only(left: 15), // Moves Google Logo
             mapType: _satelliteEnabled ? MapType.hybrid : MapType.normal,
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
@@ -531,7 +533,8 @@ class _MapScreenState extends State<MapScreen> {
             alignment: Alignment.centerLeft,
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.only(left: 16, bottom: 30),
+                padding: EdgeInsets.only(
+                    left: floatButtonOffset, bottom: floatButtonOffset),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: <Widget>[
