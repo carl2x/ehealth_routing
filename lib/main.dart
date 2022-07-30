@@ -294,7 +294,7 @@ class _MapScreenState extends State<MapScreen> {
     // Only get direction if there are more than two points on map
     if (_markers.length >= 2) {
       int prevMarkerNum = int.parse(currMarkerID.value) - 1;
-      for (int i = 0; i < _markers.length; i++) {
+      for (int i = 0; i < _markerNumber - 1; i++) {
         if (_markers.containsKey(MarkerId(prevMarkerNum.toString()))) {
           break;
         }
