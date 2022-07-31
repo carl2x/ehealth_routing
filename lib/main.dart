@@ -176,22 +176,28 @@ class _MapScreenState extends State<MapScreen> {
                     nextMarkerNum++;
                   }
                   // Case One: No Previous Marker (1st Marker in route)
-                  if (!prevFound &&
-                      _polylines[PolylineId(currMarkerID.value)] != null) {
+                  if (!prevFound) {
                     _polylines.removeWhere(
                         (key, value) => key == PolylineId(currMarkerID.value));
-                    _removeCurrentTrip(currMarkerID.value);
+                    if (_trips.containsKey(currMarkerID.value)) {
+                      _removeCurrentTrip(currMarkerID.value);
+                    }
                     // Remove marker
                     _markers.removeWhere((key, value) => key == currMarkerID);
 
+                    _markers[MarkerId(nextMarkerNum.toString())] =
+                        _markers[MarkerId(nextMarkerNum.toString())]!.copyWith(
+                            iconParam: BitmapDescriptor.defaultMarkerWithHue(
+                                BitmapDescriptor.hueRed));
                     _formatDistanceTime();
                   }
                   // Case Two: No After Markers (last Marker in route)
-                  else if (!nextFound &&
-                      _polylines[PolylineId(currMarkerID.value)] == null) {
+                  else if (!nextFound) {
                     _polylines.removeWhere((key, value) =>
                         key == PolylineId(prevMarkerNum.toString()));
-                    _removeCurrentTrip(prevMarkerNum.toString());
+                    if (_trips.containsKey(prevMarkerNum.toString())) {
+                      _removeCurrentTrip(prevMarkerNum.toString());
+                    }
                     // Remove marker
                     _markers.removeWhere((key, value) => key == currMarkerID);
 
@@ -203,8 +209,12 @@ class _MapScreenState extends State<MapScreen> {
                         key == PolylineId(prevMarkerNum.toString()));
                     _polylines.removeWhere(
                         (key, value) => key == PolylineId(currMarkerID.value));
-                    _removeCurrentTrip(prevMarkerNum.toString());
-                    _removeCurrentTrip(currMarkerID.value);
+                    if (_trips.containsKey(prevMarkerNum.toString())) {
+                      _removeCurrentTrip(prevMarkerNum.toString());
+                    }
+                    if (_trips.containsKey(currMarkerID.value)) {
+                      _removeCurrentTrip(currMarkerID.value);
+                    }
                     // Remove marker
                     _markers.removeWhere((key, value) => key == currMarkerID);
 
@@ -248,22 +258,24 @@ class _MapScreenState extends State<MapScreen> {
                 nextMarkerNum++;
               }
               // Case One: No Previous Marker (1st Marker in route)
-              if (!prevFound &&
-                  _polylines[PolylineId(currMarkerID.value)] != null) {
+              if (!prevFound) {
                 _polylines.removeWhere(
                     (key, value) => key == PolylineId(currMarkerID.value));
-                _removeCurrentTrip(currMarkerID.value);
+                if (_trips.containsKey(currMarkerID.value)) {
+                  _removeCurrentTrip(currMarkerID.value);
+                }
 
                 // Generate new trip in route
                 _getDirections(
                     currMarkerID, MarkerId(nextMarkerNum.toString()));
               }
               // Case Two: No After Markers (last Marker in route)
-              else if (!nextFound &&
-                  _polylines[PolylineId(currMarkerID.value)] == null) {
+              else if (!nextFound) {
                 _polylines.removeWhere((key, value) =>
                     key == PolylineId(prevMarkerNum.toString()));
-                _removeCurrentTrip(prevMarkerNum.toString());
+                if (_trips.containsKey(prevMarkerNum.toString())) {
+                  _removeCurrentTrip(prevMarkerNum.toString());
+                }
 
                 // Generate new trip in route
                 _getDirections(
@@ -275,8 +287,12 @@ class _MapScreenState extends State<MapScreen> {
                     key == PolylineId(prevMarkerNum.toString()));
                 _polylines.removeWhere(
                     (key, value) => key == PolylineId(currMarkerID.value));
-                _removeCurrentTrip(prevMarkerNum.toString());
-                _removeCurrentTrip(currMarkerID.value);
+                if (_trips.containsKey(prevMarkerNum.toString())) {
+                  _removeCurrentTrip(prevMarkerNum.toString());
+                }
+                if (_trips.containsKey(currMarkerID.value)) {
+                  _removeCurrentTrip(currMarkerID.value);
+                }
 
                 // Generate new trips in route
                 _getDirections(
@@ -289,6 +305,11 @@ class _MapScreenState extends State<MapScreen> {
         }),
       );
       _markers[currMarkerID] = marker as Marker;
+      if (_markers.length == 1) {
+        _markers[currMarkerID] = _markers[currMarkerID]!.copyWith(
+            iconParam:
+                BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed));
+      }
     });
     _currMarker = marker;
     // Only get direction if there are more than two points on map
