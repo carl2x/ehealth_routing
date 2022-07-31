@@ -41,7 +41,7 @@ class _MapScreenState extends State<MapScreen> {
   late GoogleMapController _mapController;
   Marker? _currMarker;
   Directions? _info;
-  //Position? _currentPosition;
+  Position? _currentPosition;
   bool _trafficEnabled = false;
   bool _trafficePressed = false;
   bool _satelliteEnabled = false;
@@ -117,7 +117,7 @@ class _MapScreenState extends State<MapScreen> {
         .then((Position position) async {
       setState(() {
         // Store the position in the variable
-        //_currentPosition = position;
+        _currentPosition = position;
 
         // For moving the camera to current location
         _mapController.animateCamera(
@@ -304,6 +304,7 @@ class _MapScreenState extends State<MapScreen> {
           });
         }),
       );
+      // Adds marker to hashtable
       _markers[currMarkerID] = marker as Marker;
       if (_markers.length == 1) {
         _markers[currMarkerID] = _markers[currMarkerID]!.copyWith(
@@ -486,7 +487,7 @@ class _MapScreenState extends State<MapScreen> {
                 primary: Colors.white,
                 textStyle: const TextStyle(fontWeight: FontWeight.w700),
               ),
-              child: const Text('ZOOM ON MARKER'),
+              child: const Text('FOCUS MARKER'),
             ),
           if (_markers.isNotEmpty)
             TextButton(
@@ -565,7 +566,7 @@ class _MapScreenState extends State<MapScreen> {
                       onPressed: () {
                         _mapController.animateCamera(CameraUpdate.zoomIn());
                       },
-                      child: const Icon(Icons.add),
+                      child: const Icon(Icons.zoom_in),
                     ),
                     const SizedBox(height: 0),
                     FloatingActionButton.small(
@@ -574,7 +575,7 @@ class _MapScreenState extends State<MapScreen> {
                       onPressed: () {
                         _mapController.animateCamera(CameraUpdate.zoomOut());
                       },
-                      child: const Icon(Icons.remove),
+                      child: const Icon(Icons.zoom_out),
                     ),
                     const SizedBox(height: 15),
                     FloatingActionButton(
@@ -633,17 +634,41 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
           ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                    right: floatButtonOffset, bottom: floatButtonOffset),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: <Widget>[
+                    FloatingActionButton.small(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      foregroundColor: Colors.black,
+                      onPressed: () {
+                        _addMarker(LatLng(_currentPosition!.latitude,
+                            _currentPosition!.longitude));
+                      },
+                      child: const Icon(Icons.location_pin),
+                    ),
+                    const SizedBox(height: 15),
+                    FloatingActionButton(
+                      backgroundColor: Colors.black54,
+                      onPressed: () {
+                        _getCurrentLocation();
+                      },
+                      child: const Icon(
+                        Icons.my_location,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.black54,
-        onPressed: () {
-          _getCurrentLocation();
-        },
-        child: const Icon(
-          Icons.my_location,
-          color: Colors.white,
-        ),
       ),
     );
   }
