@@ -51,8 +51,10 @@ class _MapScreenState extends State<MapScreen> {
   late GoogleMapController _mapController;
 
   Marker? _currMarker;
+  Marker? _currPosMarker;
   Directions? _info;
   Position? _currentPosition;
+
   bool _trafficEnabled = false;
   bool _trafficePressed = false;
   bool _satelliteEnabled = false;
@@ -360,6 +362,7 @@ class _MapScreenState extends State<MapScreen> {
         _markerNumber = 1;
         _markers.clear();
         _info = null;
+        _currPosMarker = null;
       }
       _polylines.clear();
       _days = 0;
@@ -625,7 +628,7 @@ class _MapScreenState extends State<MapScreen> {
                       onPressed: () {
                         _mapController.animateCamera(CameraUpdate.zoomIn());
                       },
-                      child: const Icon(Icons.zoom_in),
+                      child: const Icon(Icons.add),
                     ),
                     const SizedBox(height: 0),
                     FloatingActionButton.small(
@@ -635,7 +638,7 @@ class _MapScreenState extends State<MapScreen> {
                       onPressed: () {
                         _mapController.animateCamera(CameraUpdate.zoomOut());
                       },
-                      child: const Icon(Icons.zoom_out),
+                      child: const Icon(Icons.remove),
                     ),
                     const SizedBox(height: 15),
                     FloatingActionButton(
@@ -729,7 +732,7 @@ class _MapScreenState extends State<MapScreen> {
                           _displayPrediction(p);
                         }
                       },
-                      child: const Icon(Icons.add_location_outlined),
+                      child: const Icon(Icons.search),
                     ),
                     const SizedBox(height: 0),
                     FloatingActionButton.small(
@@ -737,8 +740,24 @@ class _MapScreenState extends State<MapScreen> {
                       backgroundColor: Theme.of(context).primaryColor,
                       foregroundColor: Colors.black,
                       onPressed: () {
-                        _addMarker(LatLng(_currentPosition!.latitude,
-                            _currentPosition!.longitude));
+                        if (_currentPosition?.latitude ==
+                                _currPosMarker?.position.latitude &&
+                            _currentPosition?.longitude ==
+                                _currPosMarker?.position.longitude) {
+                          _mapController.animateCamera(
+                            CameraUpdate.newCameraPosition(
+                              CameraPosition(
+                                target: LatLng(_currentPosition!.latitude,
+                                    _currentPosition!.longitude),
+                                zoom: 15.0,
+                              ),
+                            ),
+                          );
+                        } else {
+                          _addMarker(LatLng(_currentPosition!.latitude,
+                              _currentPosition!.longitude));
+                          _currPosMarker = _currMarker;
+                        }
                       },
                       child: const Icon(Icons.location_pin),
                     ),
