@@ -5,6 +5,7 @@
 import 'package:ehealth_routing/directions_model.dart';
 import 'package:ehealth_routing/directions_repository.dart';
 import 'package:ehealth_routing/.env.dart';
+import 'package:ehealth_routing/popups.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -46,7 +47,9 @@ class _MapScreenState extends State<MapScreen> {
     zoom: 12,
   );
 
+  late BuildContext _context;
   late GoogleMapController _mapController;
+
   Marker? _currMarker;
   Directions? _info;
   Position? _currentPosition;
@@ -189,7 +192,7 @@ class _MapScreenState extends State<MapScreen> {
                     _polylines.removeWhere(
                         (key, value) => key == PolylineId(currMarkerID.value));
                     if (_trips.containsKey(currMarkerID.value)) {
-                      _removeCurrentTrip(currMarkerID.value);
+                      _remoevTrip(currMarkerID.value);
                     }
                     // Remove marker
                     _markers.removeWhere((key, value) => key == currMarkerID);
@@ -206,7 +209,7 @@ class _MapScreenState extends State<MapScreen> {
                     _polylines.removeWhere((key, value) =>
                         key == PolylineId(prevMarkerNum.toString()));
                     if (_trips.containsKey(prevMarkerNum.toString())) {
-                      _removeCurrentTrip(prevMarkerNum.toString());
+                      _remoevTrip(prevMarkerNum.toString());
                     }
                     // Remove marker
                     _markers.removeWhere((key, value) => key == currMarkerID);
@@ -220,10 +223,10 @@ class _MapScreenState extends State<MapScreen> {
                     _polylines.removeWhere(
                         (key, value) => key == PolylineId(currMarkerID.value));
                     if (_trips.containsKey(prevMarkerNum.toString())) {
-                      _removeCurrentTrip(prevMarkerNum.toString());
+                      _remoevTrip(prevMarkerNum.toString());
                     }
                     if (_trips.containsKey(currMarkerID.value)) {
-                      _removeCurrentTrip(currMarkerID.value);
+                      _remoevTrip(currMarkerID.value);
                     }
                     // Remove marker
                     _markers.removeWhere((key, value) => key == currMarkerID);
@@ -272,7 +275,7 @@ class _MapScreenState extends State<MapScreen> {
                 _polylines.removeWhere(
                     (key, value) => key == PolylineId(currMarkerID.value));
                 if (_trips.containsKey(currMarkerID.value)) {
-                  _removeCurrentTrip(currMarkerID.value);
+                  _remoevTrip(currMarkerID.value);
                 }
 
                 // Generate new trip in route
@@ -284,7 +287,7 @@ class _MapScreenState extends State<MapScreen> {
                 _polylines.removeWhere((key, value) =>
                     key == PolylineId(prevMarkerNum.toString()));
                 if (_trips.containsKey(prevMarkerNum.toString())) {
-                  _removeCurrentTrip(prevMarkerNum.toString());
+                  _remoevTrip(prevMarkerNum.toString());
                 }
 
                 // Generate new trip in route
@@ -298,10 +301,10 @@ class _MapScreenState extends State<MapScreen> {
                 _polylines.removeWhere(
                     (key, value) => key == PolylineId(currMarkerID.value));
                 if (_trips.containsKey(prevMarkerNum.toString())) {
-                  _removeCurrentTrip(prevMarkerNum.toString());
+                  _remoevTrip(prevMarkerNum.toString());
                 }
                 if (_trips.containsKey(currMarkerID.value)) {
-                  _removeCurrentTrip(currMarkerID.value);
+                  _remoevTrip(currMarkerID.value);
                 }
 
                 // Generate new trips in route
@@ -339,7 +342,7 @@ class _MapScreenState extends State<MapScreen> {
     _markerNumber++;
   }
 
-  void _removeCurrentTrip(String currMarkerIDValue) {
+  void _remoevTrip(String currMarkerIDValue) {
     // Subtract trip info from total route
     _days -= _trips[currMarkerIDValue]!["days"]!.toInt();
     _hours -= _trips[currMarkerIDValue]!["hours"]!.toInt();
@@ -371,10 +374,15 @@ class _MapScreenState extends State<MapScreen> {
 
   void _getDirections(MarkerId markerIdStart, MarkerId markerIdEnd) async {
     // Get directions
-    final directions = await DirectionsRepository().getDirections(
-        origin: _markers[markerIdStart]!.position,
-        destination: _markers[markerIdEnd]!.position);
-    setState(() => _info = directions);
+    try {
+      final directions = await DirectionsRepository().getDirections(
+          origin: _markers[markerIdStart]!.position,
+          destination: _markers[markerIdEnd]!.position);
+      setState(() => _info = directions);
+    } catch (e) {
+      showRouteErrorDialog(_context);
+      return;
+    }
 
     List<String> distanceElements = _info!.totalDistance.split(" ");
     List<String> durationElements = _info!.totalDuration.split(" ");
@@ -470,63 +478,35 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  Future<void> _displayPrediction(Prediction p) async {
+  Future<void> _displayPrediction(Prediction? p) async {
     try {
       PlacesDetailsResponse detail =
-          await _places.getDetailsByPlaceId("${p.placeId}");
+          await _places.getDetailsByPlaceId("${p!.placeId}");
 
       //var placeId = p.placeId;
-      //var address = await locationFromAddress("${p.description}");
+      //var address = await locationFromAddress("${p!.description}");
 
       _inputLatitude = detail.result.geometry!.location.lat;
       _inputLongitude = detail.result.geometry!.location.lng;
-
-      _addMarker(LatLng(_inputLatitude, _inputLongitude));
-
-      _mapController.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: LatLng(_inputLatitude, _inputLongitude),
-            zoom: 15,
-            tilt: 0,
-          ),
-        ),
-      );
     } catch (e) {
-      _showErrorDialog();
+      showSearchErrorDialog(_context);
     }
-  }
+    _addMarker(LatLng(_inputLatitude, _inputLongitude));
 
-  Future<void> _showErrorDialog() async {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false, // user must tap button!
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Error'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: const <Widget>[
-                Text('Location not found.'),
-                Text('Try a more specific location.'),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
+    _mapController.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(_inputLatitude, _inputLongitude),
+          zoom: 15,
+          tilt: 0,
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    _context = context;
     double floatButtonOffset = 16.0;
     //var height = MediaQuery.of(context).size.height;
     //var width = MediaQuery.of(context).size.width;
@@ -543,6 +523,13 @@ class _MapScreenState extends State<MapScreen> {
             ? const Text('eHealth Routing')
             : const Text('eHealth'),
         actions: [
+          TextButton(
+            onPressed: () => showHelpDialog(_context),
+            style: TextButton.styleFrom(
+              primary: Colors.white,
+            ),
+            child: const Icon(Icons.help_outline),
+          ),
           if (_currMarker != null)
             TextButton(
               onPressed: () => _mapController.animateCamera(
@@ -676,7 +663,7 @@ class _MapScreenState extends State<MapScreen> {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+                  children: <Widget>[
                     ElevatedButton(
                       style: _satellitePressed
                           ? ElevatedButton.styleFrom(
@@ -724,7 +711,7 @@ class _MapScreenState extends State<MapScreen> {
                       backgroundColor: Theme.of(context).primaryColor,
                       foregroundColor: Colors.black,
                       onPressed: () async {
-                        Prediction p = await PlacesAutocomplete.show(
+                        Prediction? p = await PlacesAutocomplete.show(
                           offset: 0,
                           strictbounds: false,
                           region: "us",
@@ -737,8 +724,10 @@ class _MapScreenState extends State<MapScreen> {
                           types: const <String>[],
                           hint: "Search for a location",
                           startText: "",
-                        ) as Prediction;
-                        _displayPrediction(p);
+                        );
+                        if (p != null) {
+                          _displayPrediction(p);
+                        }
                       },
                       child: const Icon(Icons.add_location_outlined),
                     ),
