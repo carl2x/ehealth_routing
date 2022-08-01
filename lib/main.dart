@@ -1,3 +1,7 @@
+/*
+ * This is the main file where the app and its homescreen reside.
+ */
+
 import 'package:ehealth_routing/directions_model.dart';
 import 'package:ehealth_routing/directions_repository.dart';
 import 'package:ehealth_routing/.env.dart';
@@ -124,10 +128,8 @@ class _MapScreenState extends State<MapScreen> {
     await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
         .then((Position position) async {
       setState(() {
-        // Store the position in the variable
         _currentPosition = position;
 
-        // For moving the camera to current location
         _mapController.animateCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
@@ -137,7 +139,6 @@ class _MapScreenState extends State<MapScreen> {
           ),
         );
       });
-      //await _getAddress();
     }).catchError((e) {});
   }
 
@@ -481,6 +482,7 @@ class _MapScreenState extends State<MapScreen> {
       _inputLongitude = detail.result.geometry!.location.lng;
 
       _addMarker(LatLng(_inputLatitude, _inputLongitude));
+
       _mapController.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
