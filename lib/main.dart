@@ -1,8 +1,13 @@
-import 'package:flutter/material.dart';
 import 'package:ehealth_routing/directions_model.dart';
 import 'package:ehealth_routing/directions_repository.dart';
+import 'package:ehealth_routing/.env.dart';
+
+import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_google_places/flutter_google_places.dart';
+import 'package:google_maps_webservice/places.dart';
+//import 'package:geocoding/geocoding.dart';
 
 void main() {
   runApp(const MyApp());
@@ -28,8 +33,7 @@ class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
 
   @override
-  // ignore: library_private_types_in_public_api
-  _MapScreenState createState() => _MapScreenState();
+  State<MapScreen> createState() => _MapScreenState();
 }
 
 class _MapScreenState extends State<MapScreen> {
@@ -59,6 +63,10 @@ class _MapScreenState extends State<MapScreen> {
   int _mins = 0;
   String _distanceText = '';
   String _durationText = '';
+
+  final GoogleMapsPlaces _places = GoogleMapsPlaces(apiKey: googleAPIKey);
+  double _inputLatitude = 0.0;
+  double _inputLongitude = 0.0;
 
   @override
   void dispose() {
@@ -185,6 +193,7 @@ class _MapScreenState extends State<MapScreen> {
                     // Remove marker
                     _markers.removeWhere((key, value) => key == currMarkerID);
 
+                    // Sets first marker in route to red
                     _markers[MarkerId(nextMarkerNum.toString())] =
                         _markers[MarkerId(nextMarkerNum.toString())]!.copyWith(
                             iconParam: BitmapDescriptor.defaultMarkerWithHue(
@@ -306,6 +315,7 @@ class _MapScreenState extends State<MapScreen> {
       );
       // Adds marker to hashtable
       _markers[currMarkerID] = marker as Marker;
+      // Sets first marker in route to red
       if (_markers.length == 1) {
         _markers[currMarkerID] = _markers[currMarkerID]!.copyWith(
             iconParam:
@@ -353,6 +363,8 @@ class _MapScreenState extends State<MapScreen> {
       _mins = 0;
       _miles = 0.0;
       _feet = 0;
+      _inputLatitude = 0.0;
+      _inputLongitude = 0.0;
     });
   }
 
@@ -457,11 +469,68 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  Future<void> _displayPrediction(Prediction p) async {
+    try {
+      PlacesDetailsResponse detail =
+          await _places.getDetailsByPlaceId("${p.placeId}");
+
+      //var placeId = p.placeId;
+      //var address = await locationFromAddress("${p.description}");
+
+      _inputLatitude = detail.result.geometry!.location.lat;
+      _inputLongitude = detail.result.geometry!.location.lng;
+
+      _addMarker(LatLng(_inputLatitude, _inputLongitude));
+      _mapController.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(_inputLatitude, _inputLongitude),
+            zoom: 15,
+            tilt: 0,
+          ),
+        ),
+      );
+    } catch (e) {
+      _showErrorDialog();
+    }
+  }
+
+  Future<void> _showErrorDialog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: const <Widget>[
+                Text('Location not found.'),
+                Text('Try a more specific location.'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     double floatButtonOffset = 16.0;
+    //var height = MediaQuery.of(context).size.height;
+    //var width = MediaQuery.of(context).size.width;
 
     return Scaffold(
+      // Top Appbar
       appBar: AppBar(
         centerTitle: false,
         titleTextStyle:
@@ -550,7 +619,7 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
             ),
-          // Button stack
+          // CenterLeft
           Align(
             alignment: Alignment.centerLeft,
             child: SafeArea(
@@ -561,6 +630,7 @@ class _MapScreenState extends State<MapScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: <Widget>[
                     FloatingActionButton.small(
+                      heroTag: "Zoom In",
                       backgroundColor: Theme.of(context).primaryColor,
                       foregroundColor: Colors.black,
                       onPressed: () {
@@ -570,6 +640,7 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                     const SizedBox(height: 0),
                     FloatingActionButton.small(
+                      heroTag: "Zoom Out",
                       backgroundColor: Theme.of(context).primaryColor,
                       foregroundColor: Colors.black,
                       onPressed: () {
@@ -579,6 +650,7 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                     const SizedBox(height: 15),
                     FloatingActionButton(
+                      heroTag: "Show Route",
                       backgroundColor: Theme.of(context).primaryColor,
                       foregroundColor: Colors.black,
                       onPressed: () => _mapController.animateCamera(
@@ -594,6 +666,7 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
           ),
+          // BottomCenter
           Align(
             alignment: Alignment.bottomCenter,
             child: SafeArea(
@@ -634,6 +707,7 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
           ),
+          // CenterRight
           Align(
             alignment: Alignment.centerRight,
             child: SafeArea(
@@ -644,6 +718,31 @@ class _MapScreenState extends State<MapScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: <Widget>[
                     FloatingActionButton.small(
+                      heroTag: "Search",
+                      backgroundColor: Theme.of(context).primaryColor,
+                      foregroundColor: Colors.black,
+                      onPressed: () async {
+                        Prediction p = await PlacesAutocomplete.show(
+                          offset: 0,
+                          strictbounds: false,
+                          region: "us",
+                          language: "en",
+                          context: context,
+                          mode: Mode.overlay,
+                          apiKey: googleAPIKey,
+                          sessionToken: null,
+                          components: [Component(Component.country, "us")],
+                          types: const <String>[],
+                          hint: "Search for a location",
+                          startText: "",
+                        ) as Prediction;
+                        _displayPrediction(p);
+                      },
+                      child: const Icon(Icons.add_location_outlined),
+                    ),
+                    const SizedBox(height: 0),
+                    FloatingActionButton.small(
+                      heroTag: "Current Location Marker",
                       backgroundColor: Theme.of(context).primaryColor,
                       foregroundColor: Colors.black,
                       onPressed: () {
@@ -654,6 +753,7 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                     const SizedBox(height: 15),
                     FloatingActionButton(
+                      heroTag: "Current Location",
                       backgroundColor: Colors.black54,
                       onPressed: () {
                         _getCurrentLocation();
