@@ -1,6 +1,6 @@
 # ehealth_routing
 
-Flutter mobile app for eHealth Routing, built by students in Purdue University.
+Flutter mobile app for eHealth Routing, built by students at Purdue University.
 
 ## What does this app do?
 
