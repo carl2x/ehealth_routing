@@ -59,6 +59,7 @@ class _MapScreenState extends State<MapScreen> {
   bool _trafficePressed = false;
   bool _satelliteEnabled = false;
   bool _satellitePressed = false;
+  bool _gotCurrentLocation = false;
 
   var _markerNumber = 1;
   final Map<MarkerId, Marker> _markers = <MarkerId, Marker>{};
@@ -87,7 +88,6 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     _determinePosition();
-    _getCurrentLocation();
   }
 
   Future<Position> _determinePosition() async {
@@ -133,6 +133,7 @@ class _MapScreenState extends State<MapScreen> {
     await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
         .then((Position position) async {
       setState(() {
+        _gotCurrentLocation = true;
         _currentPosition = position;
 
         _mapController.animateCamera(
@@ -163,6 +164,12 @@ class _MapScreenState extends State<MapScreen> {
             snippet: "Tap to Delete",
             onTap: () {
               setState(() {
+                if (_markers[currMarkerID]!.position.latitude ==
+                        _currPosMarker?.position.latitude &&
+                    _markers[currMarkerID]!.position.longitude ==
+                        _currPosMarker?.position.longitude) {
+                  _currPosMarker = null;
+                }
                 // Exception
                 if (_markers.length == 1) {
                   _markers.removeWhere((key, value) => key == currMarkerID);
@@ -194,7 +201,7 @@ class _MapScreenState extends State<MapScreen> {
                     _polylines.removeWhere(
                         (key, value) => key == PolylineId(currMarkerID.value));
                     if (_trips.containsKey(currMarkerID.value)) {
-                      _remoevTrip(currMarkerID.value);
+                      _removeTrip(currMarkerID.value);
                     }
                     // Remove marker
                     _markers.removeWhere((key, value) => key == currMarkerID);
@@ -211,7 +218,7 @@ class _MapScreenState extends State<MapScreen> {
                     _polylines.removeWhere((key, value) =>
                         key == PolylineId(prevMarkerNum.toString()));
                     if (_trips.containsKey(prevMarkerNum.toString())) {
-                      _remoevTrip(prevMarkerNum.toString());
+                      _removeTrip(prevMarkerNum.toString());
                     }
                     // Remove marker
                     _markers.removeWhere((key, value) => key == currMarkerID);
@@ -225,10 +232,10 @@ class _MapScreenState extends State<MapScreen> {
                     _polylines.removeWhere(
                         (key, value) => key == PolylineId(currMarkerID.value));
                     if (_trips.containsKey(prevMarkerNum.toString())) {
-                      _remoevTrip(prevMarkerNum.toString());
+                      _removeTrip(prevMarkerNum.toString());
                     }
                     if (_trips.containsKey(currMarkerID.value)) {
-                      _remoevTrip(currMarkerID.value);
+                      _removeTrip(currMarkerID.value);
                     }
                     // Remove marker
                     _markers.removeWhere((key, value) => key == currMarkerID);
@@ -277,7 +284,7 @@ class _MapScreenState extends State<MapScreen> {
                 _polylines.removeWhere(
                     (key, value) => key == PolylineId(currMarkerID.value));
                 if (_trips.containsKey(currMarkerID.value)) {
-                  _remoevTrip(currMarkerID.value);
+                  _removeTrip(currMarkerID.value);
                 }
 
                 // Generate new trip in route
@@ -289,7 +296,7 @@ class _MapScreenState extends State<MapScreen> {
                 _polylines.removeWhere((key, value) =>
                     key == PolylineId(prevMarkerNum.toString()));
                 if (_trips.containsKey(prevMarkerNum.toString())) {
-                  _remoevTrip(prevMarkerNum.toString());
+                  _removeTrip(prevMarkerNum.toString());
                 }
 
                 // Generate new trip in route
@@ -303,10 +310,10 @@ class _MapScreenState extends State<MapScreen> {
                 _polylines.removeWhere(
                     (key, value) => key == PolylineId(currMarkerID.value));
                 if (_trips.containsKey(prevMarkerNum.toString())) {
-                  _remoevTrip(prevMarkerNum.toString());
+                  _removeTrip(prevMarkerNum.toString());
                 }
                 if (_trips.containsKey(currMarkerID.value)) {
-                  _remoevTrip(currMarkerID.value);
+                  _removeTrip(currMarkerID.value);
                 }
 
                 // Generate new trips in route
@@ -344,7 +351,7 @@ class _MapScreenState extends State<MapScreen> {
     _markerNumber++;
   }
 
-  void _remoevTrip(String currMarkerIDValue) {
+  void _removeTrip(String currMarkerIDValue) {
     // Subtract trip info from total route
     _days -= _trips[currMarkerIDValue]!["days"]!.toInt();
     _hours -= _trips[currMarkerIDValue]!["hours"]!.toInt();
@@ -358,12 +365,12 @@ class _MapScreenState extends State<MapScreen> {
   void _clear(bool clearMarker) {
     setState(() {
       if (clearMarker) {
-        _currMarker = null;
         _markerNumber = 1;
         _markers.clear();
         _info = null;
         _currPosMarker = null;
       }
+      _currMarker = null;
       _polylines.clear();
       _days = 0;
       _hours = 0;
@@ -737,41 +744,52 @@ class _MapScreenState extends State<MapScreen> {
                     const SizedBox(height: 0),
                     FloatingActionButton.small(
                       heroTag: "Current Location Marker",
-                      backgroundColor: Theme.of(context).primaryColor,
-                      foregroundColor: Colors.black,
-                      onPressed: () {
-                        if (_currentPosition?.latitude ==
-                                _currPosMarker?.position.latitude &&
-                            _currentPosition?.longitude ==
-                                _currPosMarker?.position.longitude) {
-                          _mapController.animateCamera(
-                            CameraUpdate.newCameraPosition(
-                              CameraPosition(
-                                target: LatLng(_currentPosition!.latitude,
-                                    _currentPosition!.longitude),
-                                zoom: 15.0,
-                              ),
-                            ),
-                          );
-                        } else {
-                          _addMarker(LatLng(_currentPosition!.latitude,
-                              _currentPosition!.longitude));
-                          _currPosMarker = _currMarker;
-                        }
-                      },
-                      child: const Icon(Icons.location_pin),
+                      backgroundColor: _gotCurrentLocation
+                          ? Theme.of(context).primaryColor
+                          : Colors.black54,
+                      foregroundColor:
+                          _gotCurrentLocation ? Colors.black : Colors.white,
+                      onPressed: _gotCurrentLocation
+                          ? () async {
+                              if (_currPosMarker != null) {
+                                _mapController.animateCamera(
+                                  CameraUpdate.newCameraPosition(
+                                    CameraPosition(
+                                      target: LatLng(_currentPosition!.latitude,
+                                          _currentPosition!.longitude),
+                                      zoom: 15.0,
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                _getCurrentLocation();
+                                _addMarker(LatLng(_currentPosition!.latitude,
+                                    _currentPosition!.longitude));
+                                _currPosMarker = _currMarker;
+                              }
+                            }
+                          : null,
+                      child: _gotCurrentLocation
+                          ? const Icon(Icons.location_pin)
+                          : const Icon(Icons.location_off),
                     ),
                     const SizedBox(height: 15),
                     FloatingActionButton(
                       heroTag: "Current Location",
-                      backgroundColor: Colors.black54,
-                      onPressed: () {
+                      backgroundColor:
+                          _gotCurrentLocation ? Colors.white : Colors.black54,
+                      onPressed: () async {
                         _getCurrentLocation();
                       },
-                      child: const Icon(
-                        Icons.my_location,
-                        color: Colors.white,
-                      ),
+                      child: _gotCurrentLocation
+                          ? const Icon(
+                              Icons.my_location,
+                              color: Colors.black,
+                            )
+                          : const Icon(
+                              Icons.my_location,
+                              color: Colors.white,
+                            ),
                     ),
                   ],
                 ),
