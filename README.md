@@ -1,16 +1,9 @@
 # ehealth_routing
 
-Flutter app for eHealth Routing.
+Flutter mobile app for eHealth Routing, built by students in Purdue University.
 
-## Getting Started
+## What does this app do?
 
-This project is a starting point for a Flutter application.
+So far, this Flutter app accomplishes basic features of Google Maps while focusing on routing and directions. Some of these basic features include the ability for users to manipulate the Map with gestures, add multiple stops/markers, rearrange and remove markers, see the distance and time to complete the entire route, use their own location, and add markers by searching for a location or address.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Soon, this app will showcase the Neareast Neighbor Algorithm in the famous Traveling Salesman problem while using the Google Maps API.
