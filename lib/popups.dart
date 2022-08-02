@@ -22,8 +22,8 @@ Future<void> showHelpDialog(BuildContext context) async {
                   ' tap on the infowindow that shows up.\n'),
               Text('The three buttons on the right hand side from top to'
                   ' bottom allows you to:'),
-              Text('1. Search for a location and add that a new marker.'),
-              Text('2. Add current location as new marker.'),
+              Text('1. Search for a location and add that as a new marker.'),
+              Text('2. Add current location as a new marker.'),
               Text('3. Show current location.'),
             ],
           ),

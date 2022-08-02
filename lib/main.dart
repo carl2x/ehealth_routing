@@ -163,6 +163,7 @@ class _MapScreenState extends State<MapScreen> {
             title: 'Marker #${currMarkerID.value}',
             snippet: "Tap to Delete",
             onTap: () {
+              // Delete
               setState(() {
                 if (_markers[currMarkerID]!.position.latitude ==
                         _currPosMarker?.position.latitude &&
@@ -250,6 +251,7 @@ class _MapScreenState extends State<MapScreen> {
                 if (_markers.isEmpty) {
                   _clear(true);
                 }
+                _currMarker = null;
               });
             }),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
@@ -369,8 +371,8 @@ class _MapScreenState extends State<MapScreen> {
         _markers.clear();
         _info = null;
         _currPosMarker = null;
+        _currMarker = null;
       }
-      _currMarker = null;
       _polylines.clear();
       _days = 0;
       _hours = 0;
@@ -525,13 +527,14 @@ class _MapScreenState extends State<MapScreen> {
       // Top Appbar
       appBar: AppBar(
         centerTitle: false,
-        titleTextStyle:
-            const TextStyle(fontSize: 22.0, fontWeight: FontWeight.w500),
+        titleTextStyle: _markers.isEmpty
+            ? const TextStyle(fontSize: 22.0, fontWeight: FontWeight.w500)
+            : const TextStyle(fontSize: 18.0, fontWeight: FontWeight.w500),
         foregroundColor: Colors.white,
         backgroundColor: Colors.redAccent,
-        title: _currMarker == null
+        title: _markers.isEmpty
             ? const Text('eHealth Routing')
-            : const Text('eHealth'),
+            : Text('Marker Count: ${_markers.length}'),
         actions: [
           TextButton(
             onPressed: () => showHelpDialog(_context),
@@ -555,7 +558,7 @@ class _MapScreenState extends State<MapScreen> {
                 primary: Colors.white,
                 textStyle: const TextStyle(fontWeight: FontWeight.w700),
               ),
-              child: const Text('FOCUS MARKER'),
+              child: const Text('FOCUS'),
             ),
           if (_markers.isNotEmpty)
             TextButton(
@@ -751,7 +754,11 @@ class _MapScreenState extends State<MapScreen> {
                           _gotCurrentLocation ? Colors.black : Colors.white,
                       onPressed: _gotCurrentLocation
                           ? () async {
-                              if (_currPosMarker != null) {
+                              if (_currPosMarker != null &&
+                                  _currentPosition!.latitude ==
+                                      _currPosMarker!.position.latitude &&
+                                  _currentPosition!.longitude ==
+                                      _currPosMarker!.position.longitude) {
                                 _mapController.animateCamera(
                                   CameraUpdate.newCameraPosition(
                                     CameraPosition(
