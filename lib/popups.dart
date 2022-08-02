@@ -17,7 +17,7 @@ Future<void> showHelpDialog(BuildContext context) async {
               Text('This app allows you to easily add markers'
                   ' and see route information.\n'),
               Text('You can add markers directly on the map by long pressing'
-                  ' anywhere. To drag markers around, long press on an exising'
+                  ' anywhere. To drag markers around, long press on an existing'
                   ' marker and drag. To delete a marker, tap on the marker and'
                   ' tap on the infowindow that shows up.\n'),
               Text('The three buttons on the right hand side from top to'
