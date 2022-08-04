@@ -79,6 +79,7 @@ class _MapScreenState extends State<MapScreen> {
   double _inputLongitude = 0.0;
 
   bool _autoMode = false;
+  bool _calcFinished = true;
   Marker? _firstMarker;
   Map<MarkerId, bool> visited = <MarkerId, bool>{};
 
@@ -451,6 +452,7 @@ class _MapScreenState extends State<MapScreen> {
       }
     });
     _currMarker = marker;
+    _clear(false);
     // Move on to the next marker
     _markerNumber++;
   }
@@ -468,12 +470,17 @@ class _MapScreenState extends State<MapScreen> {
       _getDirections(
           _firstMarker!.markerId, MarkerId(nextMarkerNum.toString()));
     } else {
+      _calcFinished = false;
       _calcRouteHelper(_firstMarker!.markerId, 1);
     }
   }
 
+  // numIteration is 1 based
   void _calcRouteHelper(MarkerId markerIdStart, int numIteration) async {
-    if (numIteration > _markers.length) return;
+    if (numIteration > _markers.length) {
+      _calcFinished = true;
+      return;
+    }
     visited[markerIdStart] = true;
 
     Map<String, double> tripToAdd = <String, double>{};
@@ -921,16 +928,28 @@ class _MapScreenState extends State<MapScreen> {
                     children: <Widget>[
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(primary: Colors.yellow),
-                        onPressed: () {
-                          _calculateRoute();
-                        },
-                        child: const Text(
-                          "Calculate Route",
-                          style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.w600,
-                              inherit: false),
-                        ),
+                        onPressed: _calcFinished
+                            ? () {
+                                _calculateRoute();
+                              }
+                            : null,
+                        child: _calcFinished
+                            ? const Text(
+                                "Calculate Route",
+                                style: TextStyle(
+                                    fontSize: 16.0,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w600,
+                                    inherit: false),
+                              )
+                            : const Text(
+                                "Calculating...",
+                                style: TextStyle(
+                                    fontSize: 16.0,
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.w600,
+                                    inherit: false),
+                              ),
                       ),
                     ],
                   ),
