@@ -729,12 +729,6 @@ class _MapScreenState extends State<MapScreen> {
     } catch (e) {
       showSearchErrorDialog(_context);
     }
-    if (!_autoMode) {
-      _addMarkerManual(LatLng(_inputLatitude, _inputLongitude));
-    } else {
-      _addMarkerAuto(LatLng(_inputLatitude, _inputLongitude));
-    }
-
     _mapController.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
@@ -744,6 +738,11 @@ class _MapScreenState extends State<MapScreen> {
         ),
       ),
     );
+    if (!_autoMode) {
+      _addMarkerManual(LatLng(_inputLatitude, _inputLongitude));
+    } else {
+      _addMarkerAuto(LatLng(_inputLatitude, _inputLongitude));
+    }
   }
 
   @override
