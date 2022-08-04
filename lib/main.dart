@@ -78,6 +78,10 @@ class _MapScreenState extends State<MapScreen> {
   double _inputLatitude = 0.0;
   double _inputLongitude = 0.0;
 
+  bool _autoMode = false;
+  Marker? _firstMarker;
+  Map<MarkerId, bool> visited = <MarkerId, bool>{};
+
   @override
   void dispose() {
     _mapController.dispose();
@@ -129,7 +133,7 @@ class _MapScreenState extends State<MapScreen> {
 
   // This function uses the geolocator package to get current location
   // and also updates the camera.
-  _getCurrentLocation() async {
+  void _getCurrentLocation() async {
     await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
         .then((Position position) async {
       setState(() {
@@ -148,7 +152,7 @@ class _MapScreenState extends State<MapScreen> {
     }).catchError((e) {});
   }
 
-  void _addMarker(LatLng pos) async {
+  void _addMarkerManual(LatLng pos) async {
     MarkerId currMarkerID = MarkerId(_markerNumber.toString());
     Marker? marker;
     setState(() {
@@ -160,178 +164,185 @@ class _MapScreenState extends State<MapScreen> {
           });
         },
         infoWindow: InfoWindow(
-            title: 'Marker #${currMarkerID.value}',
-            snippet: "Tap to Delete",
-            onTap: () {
-              // Delete
-              setState(() {
-                if (_markers[currMarkerID]!.position.latitude ==
-                        _currPosMarker?.position.latitude &&
-                    _markers[currMarkerID]!.position.longitude ==
-                        _currPosMarker?.position.longitude) {
-                  _currPosMarker = null;
+          title: 'Marker #${currMarkerID.value}',
+          snippet: "Tap to Delete",
+          onTap: () {
+            // Delete
+            setState(() {
+              if (_markers[currMarkerID]!.position.latitude ==
+                      _currPosMarker?.position.latitude &&
+                  _markers[currMarkerID]!.position.longitude ==
+                      _currPosMarker?.position.longitude) {
+                _currPosMarker = null;
+              }
+              // Exception
+              if (_markers.length == 1) {
+                _markers.removeWhere((key, value) => key == currMarkerID);
+              }
+              // When there are at least two markers
+              if (_markers.length >= 2) {
+                bool prevFound = false;
+                bool nextFound = false;
+                int prevMarkerNum = int.parse(currMarkerID.value) - 1;
+                for (int i = 0; i < _markerNumber - 1; i++) {
+                  if (_markers
+                      .containsKey(MarkerId(prevMarkerNum.toString()))) {
+                    prevFound = true;
+                    break;
+                  }
+                  prevMarkerNum--;
                 }
-                // Exception
-                if (_markers.length == 1) {
+                int nextMarkerNum = int.parse(currMarkerID.value) + 1;
+                for (int i = 0; i < _markerNumber - 1; i++) {
+                  if (_markers
+                      .containsKey(MarkerId(nextMarkerNum.toString()))) {
+                    nextFound = true;
+                    break;
+                  }
+                  nextMarkerNum++;
+                }
+                // Case One: No Previous Marker (1st Marker in route)
+                if (!prevFound) {
+                  _polylines.removeWhere(
+                      (key, value) => key == PolylineId(currMarkerID.value));
+                  if (_trips.containsKey(currMarkerID.value)) {
+                    _removeTrip(currMarkerID.value);
+                  }
+                  // Remove marker
                   _markers.removeWhere((key, value) => key == currMarkerID);
-                }
-                // When there are at least two markers
-                if (_markers.length >= 2) {
-                  bool prevFound = false;
-                  bool nextFound = false;
-                  int prevMarkerNum = int.parse(currMarkerID.value) - 1;
-                  for (int i = 0; i < _markerNumber - 1; i++) {
-                    if (_markers
-                        .containsKey(MarkerId(prevMarkerNum.toString()))) {
-                      prevFound = true;
-                      break;
-                    }
-                    prevMarkerNum--;
-                  }
-                  int nextMarkerNum = int.parse(currMarkerID.value) + 1;
-                  for (int i = 0; i < _markerNumber - 1; i++) {
-                    if (_markers
-                        .containsKey(MarkerId(nextMarkerNum.toString()))) {
-                      nextFound = true;
-                      break;
-                    }
-                    nextMarkerNum++;
-                  }
-                  // Case One: No Previous Marker (1st Marker in route)
-                  if (!prevFound) {
-                    _polylines.removeWhere(
-                        (key, value) => key == PolylineId(currMarkerID.value));
-                    if (_trips.containsKey(currMarkerID.value)) {
-                      _removeTrip(currMarkerID.value);
-                    }
-                    // Remove marker
-                    _markers.removeWhere((key, value) => key == currMarkerID);
 
-                    // Sets first marker in route to red
-                    _markers[MarkerId(nextMarkerNum.toString())] =
-                        _markers[MarkerId(nextMarkerNum.toString())]!.copyWith(
-                            iconParam: BitmapDescriptor.defaultMarkerWithHue(
-                                BitmapDescriptor.hueRed));
-                    _formatDistanceTime();
+                  // Sets first marker in route to red
+                  _firstMarker = _markers[MarkerId(nextMarkerNum.toString())];
+                  _markers[MarkerId(nextMarkerNum.toString())] =
+                      _markers[MarkerId(nextMarkerNum.toString())]!.copyWith(
+                          iconParam: BitmapDescriptor.defaultMarkerWithHue(
+                              BitmapDescriptor.hueRed));
+                  _formatDistanceTime();
+                }
+                // Case Two: No After Markers (last Marker in route)
+                else if (!nextFound) {
+                  _polylines.removeWhere((key, value) =>
+                      key == PolylineId(prevMarkerNum.toString()));
+                  if (_trips.containsKey(prevMarkerNum.toString())) {
+                    _removeTrip(prevMarkerNum.toString());
                   }
-                  // Case Two: No After Markers (last Marker in route)
-                  else if (!nextFound) {
-                    _polylines.removeWhere((key, value) =>
-                        key == PolylineId(prevMarkerNum.toString()));
-                    if (_trips.containsKey(prevMarkerNum.toString())) {
-                      _removeTrip(prevMarkerNum.toString());
-                    }
-                    // Remove marker
-                    _markers.removeWhere((key, value) => key == currMarkerID);
+                  // Remove marker
+                  _markers.removeWhere((key, value) => key == currMarkerID);
 
-                    _formatDistanceTime();
+                  _formatDistanceTime();
+                }
+                // Case Three: Has Both Previous and After Markers
+                else {
+                  _polylines.removeWhere((key, value) =>
+                      key == PolylineId(prevMarkerNum.toString()));
+                  _polylines.removeWhere(
+                      (key, value) => key == PolylineId(currMarkerID.value));
+                  if (_trips.containsKey(prevMarkerNum.toString())) {
+                    _removeTrip(prevMarkerNum.toString());
                   }
-                  // Case Three: Has Both Previous and After Markers
-                  else {
-                    _polylines.removeWhere((key, value) =>
-                        key == PolylineId(prevMarkerNum.toString()));
-                    _polylines.removeWhere(
-                        (key, value) => key == PolylineId(currMarkerID.value));
-                    if (_trips.containsKey(prevMarkerNum.toString())) {
-                      _removeTrip(prevMarkerNum.toString());
-                    }
-                    if (_trips.containsKey(currMarkerID.value)) {
-                      _removeTrip(currMarkerID.value);
-                    }
-                    // Remove marker
-                    _markers.removeWhere((key, value) => key == currMarkerID);
+                  if (_trips.containsKey(currMarkerID.value)) {
+                    _removeTrip(currMarkerID.value);
+                  }
+                  // Remove marker
+                  _markers.removeWhere((key, value) => key == currMarkerID);
 
-                    _getDirections(MarkerId(prevMarkerNum.toString()),
-                        MarkerId(nextMarkerNum.toString()));
-                  }
+                  _getDirections(MarkerId(prevMarkerNum.toString()),
+                      MarkerId(nextMarkerNum.toString()));
                 }
-                if (_markers.length == 1) {
-                  _clear(false);
-                }
-                if (_markers.isEmpty) {
-                  _clear(true);
-                }
-                _currMarker = null;
-              });
-            }),
+              }
+              if (_markers.length == 1) {
+                _clear(false);
+              }
+              if (_markers.isEmpty) {
+                _clear(true);
+              }
+              _currMarker = null;
+            });
+          },
+        ),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
         position: pos,
         draggable: true,
         onDragEnd: ((LatLng newPos) {
-          setState(() {
-            _markers[currMarkerID] =
-                _markers[currMarkerID]!.copyWith(positionParam: newPos);
-            // When there are at least two markers
-            if (_markers.length >= 2) {
-              bool prevFound = false;
-              bool nextFound = false;
-              int prevMarkerNum = int.parse(currMarkerID.value) - 1;
-              for (int i = 0; i < _markerNumber - 1; i++) {
-                if (_markers.containsKey(MarkerId(prevMarkerNum.toString()))) {
-                  prevFound = true;
-                  break;
+          setState(
+            () {
+              _markers[currMarkerID] =
+                  _markers[currMarkerID]!.copyWith(positionParam: newPos);
+              // When there are at least two markers
+              if (_markers.length >= 2) {
+                bool prevFound = false;
+                bool nextFound = false;
+                int prevMarkerNum = int.parse(currMarkerID.value) - 1;
+                for (int i = 0; i < _markerNumber - 1; i++) {
+                  if (_markers
+                      .containsKey(MarkerId(prevMarkerNum.toString()))) {
+                    prevFound = true;
+                    break;
+                  }
+                  prevMarkerNum--;
                 }
-                prevMarkerNum--;
-              }
-              int nextMarkerNum = int.parse(currMarkerID.value) + 1;
-              for (int i = 0; i < _markerNumber - 1; i++) {
-                if (_markers.containsKey(MarkerId(nextMarkerNum.toString()))) {
-                  nextFound = true;
-                  break;
+                int nextMarkerNum = int.parse(currMarkerID.value) + 1;
+                for (int i = 0; i < _markerNumber - 1; i++) {
+                  if (_markers
+                      .containsKey(MarkerId(nextMarkerNum.toString()))) {
+                    nextFound = true;
+                    break;
+                  }
+                  nextMarkerNum++;
                 }
-                nextMarkerNum++;
-              }
-              // Case One: No Previous Marker (1st Marker in route)
-              if (!prevFound) {
-                _polylines.removeWhere(
-                    (key, value) => key == PolylineId(currMarkerID.value));
-                if (_trips.containsKey(currMarkerID.value)) {
-                  _removeTrip(currMarkerID.value);
-                }
+                // Case One: No Previous Marker (1st Marker in route)
+                if (!prevFound) {
+                  _polylines.removeWhere(
+                      (key, value) => key == PolylineId(currMarkerID.value));
+                  if (_trips.containsKey(currMarkerID.value)) {
+                    _removeTrip(currMarkerID.value);
+                  }
 
-                // Generate new trip in route
-                _getDirections(
-                    currMarkerID, MarkerId(nextMarkerNum.toString()));
-              }
-              // Case Two: No After Markers (last Marker in route)
-              else if (!nextFound) {
-                _polylines.removeWhere((key, value) =>
-                    key == PolylineId(prevMarkerNum.toString()));
-                if (_trips.containsKey(prevMarkerNum.toString())) {
-                  _removeTrip(prevMarkerNum.toString());
+                  // Generate new trip in route
+                  _getDirections(
+                      currMarkerID, MarkerId(nextMarkerNum.toString()));
                 }
+                // Case Two: No After Markers (last Marker in route)
+                else if (!nextFound) {
+                  _polylines.removeWhere((key, value) =>
+                      key == PolylineId(prevMarkerNum.toString()));
+                  if (_trips.containsKey(prevMarkerNum.toString())) {
+                    _removeTrip(prevMarkerNum.toString());
+                  }
 
-                // Generate new trip in route
-                _getDirections(
-                    MarkerId(prevMarkerNum.toString()), currMarkerID);
-              }
-              // Case Three: Has Both Previous and After Markers
-              else {
-                _polylines.removeWhere((key, value) =>
-                    key == PolylineId(prevMarkerNum.toString()));
-                _polylines.removeWhere(
-                    (key, value) => key == PolylineId(currMarkerID.value));
-                if (_trips.containsKey(prevMarkerNum.toString())) {
-                  _removeTrip(prevMarkerNum.toString());
+                  // Generate new trip in route
+                  _getDirections(
+                      MarkerId(prevMarkerNum.toString()), currMarkerID);
                 }
-                if (_trips.containsKey(currMarkerID.value)) {
-                  _removeTrip(currMarkerID.value);
-                }
+                // Case Three: Has Both Previous and After Markers
+                else {
+                  _polylines.removeWhere((key, value) =>
+                      key == PolylineId(prevMarkerNum.toString()));
+                  _polylines.removeWhere(
+                      (key, value) => key == PolylineId(currMarkerID.value));
+                  if (_trips.containsKey(prevMarkerNum.toString())) {
+                    _removeTrip(prevMarkerNum.toString());
+                  }
+                  if (_trips.containsKey(currMarkerID.value)) {
+                    _removeTrip(currMarkerID.value);
+                  }
 
-                // Generate new trips in route
-                _getDirections(
-                    MarkerId(prevMarkerNum.toString()), currMarkerID);
-                _getDirections(
-                    currMarkerID, MarkerId(nextMarkerNum.toString()));
+                  // Generate new trips in route
+                  _getDirections(
+                      MarkerId(prevMarkerNum.toString()), currMarkerID);
+                  _getDirections(
+                      currMarkerID, MarkerId(nextMarkerNum.toString()));
+                }
               }
-            }
-          });
+            },
+          );
         }),
       );
       // Adds marker to hashtable
       _markers[currMarkerID] = marker as Marker;
       // Sets first marker in route to red
       if (_markers.length == 1) {
+        _firstMarker = _markers[currMarkerID];
         _markers[currMarkerID] = _markers[currMarkerID]!.copyWith(
             iconParam:
                 BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed));
@@ -364,6 +375,212 @@ class _MapScreenState extends State<MapScreen> {
     _trips.removeWhere((key, value) => key == currMarkerIDValue);
   }
 
+  void _addMarkerAuto(LatLng pos) async {
+    MarkerId currMarkerID = MarkerId(_markerNumber.toString());
+    Marker? marker;
+    setState(() {
+      marker = Marker(
+          markerId: currMarkerID,
+          onTap: () {
+            setState(() {
+              _currMarker = marker;
+            });
+          },
+          infoWindow: InfoWindow(
+              title: 'Marker #${currMarkerID.value}',
+              snippet: "Tap to Delete",
+              onTap: () {
+                bool prevFound = false;
+                int prevMarkerNum = int.parse(currMarkerID.value) - 1;
+                for (int i = 0; i < _markerNumber - 1; i++) {
+                  if (_markers
+                      .containsKey(MarkerId(prevMarkerNum.toString()))) {
+                    prevFound = true;
+                    break;
+                  }
+                  prevMarkerNum--;
+                }
+                int nextMarkerNum = int.parse(currMarkerID.value) + 1;
+                for (int i = 0; i < _markerNumber - 1; i++) {
+                  if (_markers
+                      .containsKey(MarkerId(nextMarkerNum.toString()))) {
+                    break;
+                  }
+                  nextMarkerNum++;
+                }
+                // Case One: No Previous Marker (1st Marker in route)
+                if (!prevFound) {
+                  _polylines.removeWhere(
+                      (key, value) => key == PolylineId(currMarkerID.value));
+                  if (_trips.containsKey(currMarkerID.value)) {
+                    _removeTrip(currMarkerID.value);
+                  }
+                  // Remove marker
+                  _markers.removeWhere((key, value) => key == currMarkerID);
+
+                  // Sets first marker in route to red
+                  _firstMarker = _markers[MarkerId(nextMarkerNum.toString())];
+                  _markers[MarkerId(nextMarkerNum.toString())] =
+                      _markers[MarkerId(nextMarkerNum.toString())]!.copyWith(
+                          iconParam: BitmapDescriptor.defaultMarkerWithHue(
+                              BitmapDescriptor.hueRed));
+                } else {
+                  _markers.removeWhere((key, value) => key == currMarkerID);
+                }
+                _clear(false);
+              }),
+          icon:
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          position: pos,
+          draggable: true,
+          onDragEnd: ((LatLng newPos) {
+            setState(() {
+              _markers[currMarkerID] =
+                  _markers[currMarkerID]!.copyWith(positionParam: newPos);
+              _clear(false);
+            });
+          }));
+      // Adds marker to hashtable
+      _markers[currMarkerID] = marker as Marker;
+      // Sets first marker in route to red
+      if (_markers.length == 1) {
+        _firstMarker = _markers[currMarkerID];
+        _markers[currMarkerID] = _markers[currMarkerID]!.copyWith(
+            iconParam:
+                BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed));
+      }
+    });
+    _currMarker = marker;
+    // Move on to the next marker
+    _markerNumber++;
+  }
+
+  void _calculateRoute() {
+    _clear(false);
+    if (_markers.length == 2) {
+      int nextMarkerNum = int.parse(_firstMarker!.markerId.value) + 1;
+      for (int i = 0; i < _markerNumber - 1; i++) {
+        if (_markers.containsKey(MarkerId(nextMarkerNum.toString()))) {
+          break;
+        }
+        nextMarkerNum++;
+      }
+      _getDirections(
+          _firstMarker!.markerId, MarkerId(nextMarkerNum.toString()));
+    } else {
+      _calcRouteHelper(_firstMarker!.markerId, 1);
+    }
+  }
+
+  void _calcRouteHelper(MarkerId markerIdStart, int numIteration) async {
+    if (numIteration > _markers.length) return;
+    visited[markerIdStart] = true;
+
+    Map<String, double> tripToAdd = <String, double>{};
+    int feetToAdd = 9223372036854775807;
+    double milesToAdd = 9223372036854775807.0;
+    int daysToAdd = 0;
+    int hoursToAdd = 0;
+    int minsToAdd = 0;
+    Directions? info;
+
+    MarkerId nearestMarkerId = markerIdStart; // will always get overwritten
+
+    for (MarkerId markerIdEnd in _markers.keys) {
+      if ((visited[markerIdEnd] == false ||
+              !visited.containsKey(markerIdEnd) ||
+              (numIteration == _markers.length &&
+                  markerIdEnd == _firstMarker!.markerId)) &&
+          markerIdStart != markerIdEnd) {
+        try {
+          final directions = await DirectionsRepository().getDirections(
+              origin: _markers[markerIdStart]!.position,
+              destination: _markers[markerIdEnd]!.position);
+          setState(() => info = directions);
+        } catch (e) {
+          showRouteErrorDialog(_context);
+          return;
+        }
+        List<String> distanceElements = info!.totalDistance.split(" ");
+        List<String> durationElements = info!.totalDuration.split(" ");
+        int feet = 0;
+        double miles = 0.0;
+        int days = 0;
+        int hours = 0;
+        int mins = 0;
+
+        if (distanceElements.contains("ft")) {
+          feet =
+              int.parse(distanceElements[distanceElements.indexOf("ft") - 1]);
+        }
+        if (distanceElements.contains("mi")) {
+          miles = double.parse(
+              distanceElements[distanceElements.indexOf("mi") - 1]
+                  .replaceAll(",", ""));
+        }
+        if (durationElements.contains("days")) {
+          days =
+              int.parse(durationElements[durationElements.indexOf("days") - 1]);
+        } else if (durationElements.contains("day")) {
+          days =
+              int.parse(durationElements[durationElements.indexOf("day") - 1]);
+        }
+        if (durationElements.contains("hours")) {
+          hours = int.parse(
+              durationElements[durationElements.indexOf("hours") - 1]);
+        } else if (durationElements.contains("hour")) {
+          hours =
+              int.parse(durationElements[durationElements.indexOf("hour") - 1]);
+        }
+        if (durationElements.contains("mins")) {
+          mins =
+              int.parse(durationElements[durationElements.indexOf("mins") - 1]);
+        } else if (durationElements.contains("min")) {
+          mins =
+              int.parse(durationElements[durationElements.indexOf("min") - 1]);
+        }
+        if (feet.toDouble() + miles < feetToAdd.toDouble() + milesToAdd) {
+          nearestMarkerId = markerIdEnd;
+          feetToAdd = feet;
+          milesToAdd = miles;
+          daysToAdd = days;
+          hoursToAdd = hours;
+          minsToAdd = mins;
+          _info = info;
+        }
+      }
+    }
+    tripToAdd["days"] = daysToAdd.toDouble();
+    tripToAdd["hours"] = hoursToAdd.toDouble();
+    tripToAdd["mins"] = minsToAdd.toDouble();
+    tripToAdd["miles"] = milesToAdd;
+    tripToAdd["feet"] = feetToAdd.toDouble();
+    _trips[markerIdStart.value] = tripToAdd;
+
+    _feet += feetToAdd;
+    _miles += milesToAdd;
+    _days += daysToAdd;
+    _hours += hoursToAdd;
+    _mins += minsToAdd;
+
+    _formatDistanceTime();
+
+    PolylineId currPolyID = PolylineId(markerIdStart.value);
+    Polyline currPoly;
+    setState(() {
+      currPoly = Polyline(
+        polylineId: currPolyID,
+        color: Colors.redAccent,
+        width: 5,
+        points: _info!.polylinePoints
+            .map((e) => LatLng(e.latitude, e.longitude))
+            .toList(),
+      );
+      _polylines[currPolyID] = currPoly;
+    });
+    _calcRouteHelper(nearestMarkerId, ++numIteration);
+  }
+
   void _clear(bool clearMarker) {
     setState(() {
       if (clearMarker) {
@@ -372,7 +589,9 @@ class _MapScreenState extends State<MapScreen> {
         _info = null;
         _currPosMarker = null;
         _currMarker = null;
+        _firstMarker = null;
       }
+      visited.clear();
       _polylines.clear();
       _days = 0;
       _hours = 0;
@@ -503,7 +722,11 @@ class _MapScreenState extends State<MapScreen> {
     } catch (e) {
       showSearchErrorDialog(_context);
     }
-    _addMarker(LatLng(_inputLatitude, _inputLongitude));
+    if (!_autoMode) {
+      _addMarkerManual(LatLng(_inputLatitude, _inputLongitude));
+    } else {
+      _addMarkerAuto(LatLng(_inputLatitude, _inputLongitude));
+    }
 
     _mapController.animateCamera(
       CameraUpdate.newCameraPosition(
@@ -523,6 +746,10 @@ class _MapScreenState extends State<MapScreen> {
     //var height = MediaQuery.of(context).size.height;
     //var width = MediaQuery.of(context).size.width;
 
+    Text mainTitleText = const Text('eHealth Routing');
+    Text autoModeTitleText = const Text('Auto Routing Mode');
+    Text markerCountText = Text('Marker Count: ${_markers.length}');
+
     return Scaffold(
       // Top Appbar
       appBar: AppBar(
@@ -531,11 +758,23 @@ class _MapScreenState extends State<MapScreen> {
             ? const TextStyle(fontSize: 22.0, fontWeight: FontWeight.w500)
             : const TextStyle(fontSize: 18.0, fontWeight: FontWeight.w500),
         foregroundColor: Colors.white,
-        backgroundColor: Colors.redAccent,
+        backgroundColor: _autoMode ? Colors.blue : Colors.redAccent,
         title: _markers.isEmpty
-            ? const Text('eHealth Routing')
-            : Text('Marker Count: ${_markers.length}'),
+            ? (_autoMode ? autoModeTitleText : mainTitleText)
+            : markerCountText,
         actions: [
+          if (_markers.isEmpty)
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _autoMode = !_autoMode;
+                });
+              },
+              style: TextButton.styleFrom(
+                primary: Colors.white,
+              ),
+              child: const Icon(Icons.auto_mode),
+            ),
           TextButton(
             onPressed: () => showHelpDialog(_context),
             style: TextButton.styleFrom(
@@ -556,7 +795,8 @@ class _MapScreenState extends State<MapScreen> {
               ),
               style: TextButton.styleFrom(
                 primary: Colors.white,
-                textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                textStyle: const TextStyle(
+                    fontWeight: FontWeight.w700, inherit: false),
               ),
               child: const Text('FOCUS'),
             ),
@@ -568,7 +808,8 @@ class _MapScreenState extends State<MapScreen> {
               style: TextButton.styleFrom(
                 primary: Colors.black,
                 backgroundColor: Colors.yellow,
-                textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                textStyle: const TextStyle(
+                    fontWeight: FontWeight.w700, inherit: false),
               ),
               child: const Text('CLEAR'),
             ),
@@ -590,7 +831,7 @@ class _MapScreenState extends State<MapScreen> {
             onMapCreated: (controller) => _mapController = controller,
             markers: Set<Marker>.of(_markers.values),
             polylines: Set<Polyline>.of(_polylines.values),
-            onLongPress: _addMarker,
+            onLongPress: _autoMode ? _addMarkerAuto : _addMarkerManual,
           ),
           // Route distance and duration display
           if (_info != null && (_miles > 0 || _feet > 0))
@@ -668,7 +909,35 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
           ),
-          // BottomCenter
+          // BottomCenter Up
+          if (_autoMode && _markers.length > 1)
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 60),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(primary: Colors.yellow),
+                        onPressed: () {
+                          _calculateRoute();
+                        },
+                        child: const Text(
+                          "Calculate Route",
+                          style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w600,
+                              inherit: false),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          // BottomCenter Down
           Align(
             alignment: Alignment.bottomCenter,
             child: SafeArea(
@@ -770,8 +1039,15 @@ class _MapScreenState extends State<MapScreen> {
                                 );
                               } else {
                                 _getCurrentLocation();
-                                _addMarker(LatLng(_currentPosition!.latitude,
-                                    _currentPosition!.longitude));
+                                if (!_autoMode) {
+                                  _addMarkerManual(LatLng(
+                                      _currentPosition!.latitude,
+                                      _currentPosition!.longitude));
+                                } else {
+                                  _addMarkerAuto(LatLng(
+                                      _currentPosition!.latitude,
+                                      _currentPosition!.longitude));
+                                }
                                 _currPosMarker = _currMarker;
                               }
                             }

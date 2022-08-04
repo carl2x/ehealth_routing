@@ -10,18 +10,25 @@ Future<void> showHelpDialog(BuildContext context) async {
     barrierDismissible: true,
     builder: (BuildContext context) {
       return AlertDialog(
-        title: const Text('Welcome!'),
+        title: const Text('Help Page'),
         content: SingleChildScrollView(
           child: ListBody(
             children: const <Widget>[
               Text('This app allows you to easily add markers'
                   ' and see route information.\n'),
+              Text('This app has two modes: Manual and Automatic. To switch'
+                  ' between modes, press the leftmost button up top.\n'),
               Text('You can add markers directly on the map by long pressing'
                   ' anywhere. To drag markers around, long press on an existing'
                   ' marker and drag. To delete a marker, tap on the marker and'
-                  ' tap on the infowindow that shows up.\n'),
+                  ' tap on the info window that shows up.\n'),
+              Text('MANUAL MODE: Routes will be calculated as you'
+                  ' add markers in the order you choose.\n'),
+              Text('AUTO MODE: Add all desired markers, then use the "Calculate'
+                  ' Route" button to generate the optimal tour. (A tour is a'
+                  ' cycle that starts and ends at the first marker.)\n'),
               Text('The three buttons on the right hand side from top to'
-                  ' bottom allows you to:'),
+                  ' bottom allows you to:\n'),
               Text('1. Search for a location and add that as a new marker.'),
               Text('2. Add current location as a new marker.'),
               Text('3. Show current location.'),
