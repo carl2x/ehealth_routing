@@ -459,6 +459,7 @@ class _MapScreenState extends State<MapScreen> {
 
   void _calculateRoute() {
     _clear(false);
+    _calcFinished = false;
     if (_markers.length == 2) {
       int nextMarkerNum = int.parse(_firstMarker!.markerId.value) + 1;
       for (int i = 0; i < _markerNumber - 1; i++) {
@@ -470,7 +471,6 @@ class _MapScreenState extends State<MapScreen> {
       _getDirections(
           _firstMarker!.markerId, MarkerId(nextMarkerNum.toString()));
     } else {
-      _calcFinished = false;
       _calcRouteHelper(_firstMarker!.markerId, 1);
     }
   }
@@ -685,6 +685,7 @@ class _MapScreenState extends State<MapScreen> {
       );
       _polylines[currPolyID] = currPoly;
     });
+    _calcFinished = true;
   }
 
   void _formatDistanceTime() {
