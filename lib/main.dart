@@ -506,6 +506,7 @@ class _MapScreenState extends State<MapScreen> {
           setState(() => info = directions);
         } catch (e) {
           showRouteErrorDialog(_context);
+          _calcFinished = true;
           return;
         }
         List<String> distanceElements = info!.totalDistance.split(" ");
@@ -598,6 +599,7 @@ class _MapScreenState extends State<MapScreen> {
         _currMarker = null;
         _firstMarker = null;
       }
+      _calcFinished = true;
       visited.clear();
       _polylines.clear();
       _days = 0;
@@ -619,6 +621,7 @@ class _MapScreenState extends State<MapScreen> {
       setState(() => _info = directions);
     } catch (e) {
       showRouteErrorDialog(_context);
+      _calcFinished = true;
       return;
     }
 
