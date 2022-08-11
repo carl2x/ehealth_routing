@@ -391,44 +391,55 @@ class _MapScreenState extends State<MapScreen> {
               title: 'Marker #${currMarkerID.value}',
               snippet: "Tap to Delete",
               onTap: () {
-                bool prevFound = false;
-                int prevMarkerNum = int.parse(currMarkerID.value) - 1;
-                for (int i = 0; i < _markerNumber - 1; i++) {
-                  if (_markers
-                      .containsKey(MarkerId(prevMarkerNum.toString()))) {
-                    prevFound = true;
-                    break;
+                setState(() {
+                  if (_markers[currMarkerID]!.position.latitude ==
+                          _currPosMarker?.position.latitude &&
+                      _markers[currMarkerID]!.position.longitude ==
+                          _currPosMarker?.position.longitude) {
+                    _currPosMarker = null;
                   }
-                  prevMarkerNum--;
-                }
-                int nextMarkerNum = int.parse(currMarkerID.value) + 1;
-                for (int i = 0; i < _markerNumber - 1; i++) {
-                  if (_markers
-                      .containsKey(MarkerId(nextMarkerNum.toString()))) {
-                    break;
-                  }
-                  nextMarkerNum++;
-                }
-                // Case One: No Previous Marker (1st Marker in route)
-                if (!prevFound) {
-                  _polylines.removeWhere(
-                      (key, value) => key == PolylineId(currMarkerID.value));
-                  if (_trips.containsKey(currMarkerID.value)) {
-                    _removeTrip(currMarkerID.value);
-                  }
-                  // Remove marker
-                  _markers.removeWhere((key, value) => key == currMarkerID);
+                  if (_markers.length >= 2) {
+                    bool prevFound = false;
+                    int prevMarkerNum = int.parse(currMarkerID.value) - 1;
+                    for (int i = 0; i < _markerNumber - 1; i++) {
+                      if (_markers
+                          .containsKey(MarkerId(prevMarkerNum.toString()))) {
+                        prevFound = true;
+                        break;
+                      }
+                      prevMarkerNum--;
+                    }
+                    int nextMarkerNum = int.parse(currMarkerID.value) + 1;
+                    for (int i = 0; i < _markerNumber - 1; i++) {
+                      if (_markers
+                          .containsKey(MarkerId(nextMarkerNum.toString()))) {
+                        break;
+                      }
+                      nextMarkerNum++;
+                    }
+                    // Case One: No Previous Marker (1st Marker in route)
+                    if (!prevFound) {
+                      _polylines.removeWhere((key, value) =>
+                          key == PolylineId(currMarkerID.value));
+                      if (_trips.containsKey(currMarkerID.value)) {
+                        _removeTrip(currMarkerID.value);
+                      }
 
-                  // Sets first marker in route to red
-                  _firstMarker = _markers[MarkerId(nextMarkerNum.toString())];
-                  _markers[MarkerId(nextMarkerNum.toString())] =
-                      _markers[MarkerId(nextMarkerNum.toString())]!.copyWith(
-                          iconParam: BitmapDescriptor.defaultMarkerWithHue(
-                              BitmapDescriptor.hueRed));
-                } else {
+                      // Sets first marker in route to red
+                      _firstMarker =
+                          _markers[MarkerId(nextMarkerNum.toString())];
+                      _markers[MarkerId(nextMarkerNum.toString())] =
+                          _markers[MarkerId(nextMarkerNum.toString())]!
+                              .copyWith(
+                                  iconParam:
+                                      BitmapDescriptor.defaultMarkerWithHue(
+                                          BitmapDescriptor.hueRed));
+                    }
+                  }
+                  // remove marker
                   _markers.removeWhere((key, value) => key == currMarkerID);
-                }
-                _clear(false);
+                  _clear(false);
+                });
               }),
           icon:
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
