@@ -176,10 +176,6 @@ class _MapScreenState extends State<MapScreen> {
                       _currPosMarker?.position.longitude) {
                 _currPosMarker = null;
               }
-              // Exception
-              if (_markers.length == 1) {
-                _markers.removeWhere((key, value) => key == currMarkerID);
-              }
               // When there are at least two markers
               if (_markers.length >= 2) {
                 bool prevFound = false;
@@ -209,8 +205,6 @@ class _MapScreenState extends State<MapScreen> {
                   if (_trips.containsKey(currMarkerID.value)) {
                     _removeTrip(currMarkerID.value);
                   }
-                  // Remove marker
-                  _markers.removeWhere((key, value) => key == currMarkerID);
 
                   // Sets first marker in route to red
                   _firstMarker = _markers[MarkerId(nextMarkerNum.toString())];
@@ -227,8 +221,6 @@ class _MapScreenState extends State<MapScreen> {
                   if (_trips.containsKey(prevMarkerNum.toString())) {
                     _removeTrip(prevMarkerNum.toString());
                   }
-                  // Remove marker
-                  _markers.removeWhere((key, value) => key == currMarkerID);
 
                   _formatDistanceTime();
                 }
@@ -244,13 +236,13 @@ class _MapScreenState extends State<MapScreen> {
                   if (_trips.containsKey(currMarkerID.value)) {
                     _removeTrip(currMarkerID.value);
                   }
-                  // Remove marker
-                  _markers.removeWhere((key, value) => key == currMarkerID);
 
                   _getDirections(MarkerId(prevMarkerNum.toString()),
                       MarkerId(nextMarkerNum.toString()));
                 }
               }
+              // Remove marker
+              _markers.removeWhere((key, value) => key == currMarkerID);
               if (_markers.length == 1) {
                 _clear(false);
               }
@@ -439,6 +431,10 @@ class _MapScreenState extends State<MapScreen> {
                   // remove marker
                   _markers.removeWhere((key, value) => key == currMarkerID);
                   _clear(false);
+                  if (_markers.isEmpty) {
+                    _clear(true);
+                  }
+                  _currMarker = null;
                 });
               }),
           icon:
