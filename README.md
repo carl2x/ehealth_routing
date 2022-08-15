@@ -8,5 +8,7 @@ This Flutter app accomplishes basic features of Google Maps using their API whil
 
 This app can also showcase the Neareast Neighbor Algorithm in the famous Traveling Salesman problem while utilizing the Google Maps API.
 
+<img width="335" alt="image" src="https://user-images.githubusercontent.com/17057659/184714889-c6beb775-708d-4066-9fe9-6ba07b68e3aa.png">
+
 ## App Development Journey
 https://docs.google.com/document/d/1S9F4jyB14in0o-ghQ4gAT7qFaA8Aqj-T7Nxrm9powQQ/edit
