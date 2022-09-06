@@ -788,14 +788,14 @@ class _MapScreenState extends State<MapScreen> {
                 });
               },
               style: TextButton.styleFrom(
-                primary: Colors.white,
+                foregroundColor: Colors.white,
               ),
               child: const Icon(Icons.auto_mode),
             ),
           TextButton(
             onPressed: () => showHelpDialog(_context),
             style: TextButton.styleFrom(
-              primary: Colors.white,
+              foregroundColor: Colors.white,
             ),
             child: const Icon(Icons.help_outline),
           ),
@@ -811,7 +811,7 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
               style: TextButton.styleFrom(
-                primary: Colors.white,
+                foregroundColor: Colors.white,
                 textStyle: const TextStyle(
                     fontWeight: FontWeight.w700, inherit: false),
               ),
@@ -823,7 +823,7 @@ class _MapScreenState extends State<MapScreen> {
                 _clear(true);
               }),
               style: TextButton.styleFrom(
-                primary: Colors.black,
+                foregroundColor: Colors.black,
                 backgroundColor: Colors.yellow,
                 textStyle: const TextStyle(
                     fontWeight: FontWeight.w700, inherit: false),
@@ -937,7 +937,8 @@ class _MapScreenState extends State<MapScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
                       ElevatedButton(
-                        style: ElevatedButton.styleFrom(primary: Colors.yellow),
+                        style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.yellow),
                         onPressed: _calcFinished
                             ? () {
                                 _calculateRoute();
@@ -978,9 +979,10 @@ class _MapScreenState extends State<MapScreen> {
                     ElevatedButton(
                       style: _satellitePressed
                           ? ElevatedButton.styleFrom(
-                              primary: Colors.blue,
+                              foregroundColor: Colors.blue,
                               fixedSize: const Size(10, 10))
-                          : ElevatedButton.styleFrom(primary: Colors.blueGrey),
+                          : ElevatedButton.styleFrom(
+                              foregroundColor: Colors.blueGrey),
                       onPressed: () {
                         setState(() {
                           _satellitePressed = !_satellitePressed;
@@ -992,8 +994,10 @@ class _MapScreenState extends State<MapScreen> {
                     const SizedBox(width: 10),
                     ElevatedButton(
                       style: _trafficePressed
-                          ? ElevatedButton.styleFrom(primary: Colors.blue)
-                          : ElevatedButton.styleFrom(primary: Colors.blueGrey),
+                          ? ElevatedButton.styleFrom(
+                              foregroundColor: Colors.blue)
+                          : ElevatedButton.styleFrom(
+                              foregroundColor: Colors.blueGrey),
                       onPressed: () {
                         setState(() {
                           _trafficePressed = !_trafficePressed;
