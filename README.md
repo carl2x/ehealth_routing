@@ -1,3 +1,4 @@
+[![GitHub Super-Linter](https://github.com/carl2x/ehealth_routing/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
 # ehealth_routing
 
 Flutter mobile app for eHealth Routing, built by students at Purdue University.
