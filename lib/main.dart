@@ -16,6 +16,7 @@ import 'package:google_maps_webservice/places.dart';
 //import 'package:geocoding/geocoding.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await FlutterConfig.loadEnvVariables();
   runApp(const MyApp());
 }
