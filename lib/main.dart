@@ -1033,10 +1033,11 @@ class _MapScreenState extends State<MapScreen> {
                     ElevatedButton(
                       style: _satellitePressed
                           ? ElevatedButton.styleFrom(
-                              foregroundColor: Colors.blue,
-                              fixedSize: const Size(10, 10))
+                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.blue)
                           : ElevatedButton.styleFrom(
-                              foregroundColor: Colors.blueGrey),
+                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.blueGrey),
                       onPressed: () {
                         setState(() {
                           _satellitePressed = !_satellitePressed;
@@ -1049,9 +1050,11 @@ class _MapScreenState extends State<MapScreen> {
                     ElevatedButton(
                       style: _trafficePressed
                           ? ElevatedButton.styleFrom(
-                              foregroundColor: Colors.blue)
+                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.blue)
                           : ElevatedButton.styleFrom(
-                              foregroundColor: Colors.blueGrey),
+                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.blueGrey),
                       onPressed: () {
                         setState(() {
                           _trafficePressed = !_trafficePressed;
