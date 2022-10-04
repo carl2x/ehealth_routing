@@ -1,9 +1,9 @@
 /*
  * This class handles the url requeset to retrieve reponse from Google servers.
  */
+import 'package:flutter_config/flutter_config.dart';
 
 import 'package:dio/dio.dart';
-import 'package:ehealth_routing/.env.dart';
 import 'package:ehealth_routing/directions_model.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -24,7 +24,7 @@ class DirectionsRepository {
       queryParameters: {
         'origin': '${origin.latitude},${origin.longitude}',
         'destination': '${destination.latitude},${destination.longitude}',
-        'key': googleAPIKey,
+        'key': FlutterConfig.get('GOOGLE_MAPS_API_KEY'),
       },
     );
 

@@ -4,8 +4,9 @@
 
 import 'package:ehealth_routing/directions_model.dart';
 import 'package:ehealth_routing/directions_repository.dart';
-import 'package:ehealth_routing/.env.dart';
 import 'package:ehealth_routing/popups.dart';
+
+import 'package:flutter_config/flutter_config.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -14,7 +15,8 @@ import 'package:flutter_google_places/flutter_google_places.dart';
 import 'package:google_maps_webservice/places.dart';
 //import 'package:geocoding/geocoding.dart';
 
-void main() {
+void main() async {
+  await FlutterConfig.loadEnvVariables();
   runApp(const MyApp());
 }
 
@@ -74,7 +76,8 @@ class _MapScreenState extends State<MapScreen> {
   String _distanceText = '';
   String _durationText = '';
 
-  final GoogleMapsPlaces _places = GoogleMapsPlaces(apiKey: googleAPIKey);
+  final GoogleMapsPlaces _places =
+      GoogleMapsPlaces(apiKey: FlutterConfig.get('GOOGLE_MAPS_API_KEY'));
   double _inputLatitude = 0.0;
   double _inputLongitude = 0.0;
 
@@ -1033,7 +1036,7 @@ class _MapScreenState extends State<MapScreen> {
                           language: "en",
                           context: context,
                           mode: Mode.overlay,
-                          apiKey: googleAPIKey,
+                          apiKey: FlutterConfig.get('GOOGLE_MAPS_API_KEY'),
                           sessionToken: null,
                           components: [Component(Component.country, "us")],
                           types: const <String>[],
