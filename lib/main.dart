@@ -76,7 +76,7 @@ class _MapScreenState extends State<MapScreen> {
   bool _satellitePressed = false;
   bool _gotCurrentLocation = false;
 
-  var _markerNumber = 1;
+  int _markerNumber = 1;
   final Map<MarkerId, Marker> _markers = <MarkerId, Marker>{};
   final Map<PolylineId, Polyline> _polylines = <PolylineId, Polyline>{};
   final Map<String, Map<String, double>> _trips =
@@ -742,8 +742,8 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   /*
-   * A helper function formats the distance and duration class fields in a human 
-   * readable form.
+   * A helper function that formats the distance and duration class fields in a 
+   * human readable form.
    */
   void _formatDistanceTime() {
     if ((_feet + 5280 * _miles) < 1000) {
