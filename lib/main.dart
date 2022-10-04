@@ -1,5 +1,5 @@
 /*
- * This is the main file where the app and its homescreen reside.
+ * The main file where the app and its homescreen reside.
  */
 
 import 'package:ehealth_routing/directions_model.dart';
@@ -15,12 +15,17 @@ import 'package:flutter_google_places/flutter_google_places.dart';
 import 'package:google_maps_webservice/places.dart';
 //import 'package:geocoding/geocoding.dart';
 
+// Main is the first function called when the app is run.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FlutterConfig.loadEnvVariables();
   runApp(const MyApp());
 }
 
+/*
+ * This creates a main stateless widget meaning that all its properties are
+ * immutable and final. This is the foundation we will build upon. 
+ */
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
@@ -32,11 +37,15 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primaryColor: Colors.white,
       ),
+      // Sets home page to our main stateful widget
       home: const MapScreen(),
     );
   }
 }
 
+/*
+ * This creates a stateful widget that is essentially our main program.
+ */
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
 
@@ -44,6 +53,9 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
+/*
+ * This creates a state that stores the logic and internal state of our program.
+ */
 class _MapScreenState extends State<MapScreen> {
   static const _initialCameraPosition = CameraPosition(
     target: LatLng(40.4237, -86.9212),
@@ -157,6 +169,9 @@ class _MapScreenState extends State<MapScreen> {
     }).catchError((e) {});
   }
 
+  /*
+   * A function called when we add a new marker to the map in manual mode.
+   */
   void _addMarkerManual(LatLng pos) async {
     MarkerId currMarkerID = MarkerId(_markerNumber.toString());
     Marker? marker;
@@ -345,14 +360,19 @@ class _MapScreenState extends State<MapScreen> {
                 BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed));
       }
     });
+    // Sets the _currMarker class variable to the current marker to keep track
     _currMarker = marker;
     // Only get direction if there are more than two points on map
     if (_markers.length >= 2) {
       int prevMarkerNum = int.parse(currMarkerID.value) - 1;
+      // O(_markerNumber) as _markerNumber is the maximum possible number of
+      // markers
       for (int i = 0; i < _markerNumber - 1; i++) {
         if (_markers.containsKey(MarkerId(prevMarkerNum.toString()))) {
           break;
         }
+        // We keep traversing prev until we find it (guaranteed as there are
+        // more than two markers)
         prevMarkerNum--;
       }
       _getDirections(MarkerId(prevMarkerNum.toString()), currMarkerID);
@@ -361,17 +381,10 @@ class _MapScreenState extends State<MapScreen> {
     _markerNumber++;
   }
 
-  void _removeTrip(String currMarkerIDValue) {
-    // Subtract trip info from total route
-    _days -= _trips[currMarkerIDValue]!["days"]!.toInt();
-    _hours -= _trips[currMarkerIDValue]!["hours"]!.toInt();
-    _mins -= _trips[currMarkerIDValue]!["mins"]!.toInt();
-    _miles -= _trips[currMarkerIDValue]!["miles"]!;
-    _feet -= _trips[currMarkerIDValue]!["feet"]!.toInt();
-    // Remove trip
-    _trips.removeWhere((key, value) => key == currMarkerIDValue);
-  }
-
+  /*
+   * A function called when we add a new marker to the map in the auto routing 
+   * (Travelling Salesman) mode.
+   */
   void _addMarkerAuto(LatLng pos) async {
     MarkerId currMarkerID = MarkerId(_markerNumber.toString());
     Marker? marker;
@@ -462,12 +475,17 @@ class _MapScreenState extends State<MapScreen> {
                 BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed));
       }
     });
+    // Keep track of the current marker globally
     _currMarker = marker;
     _clear(false);
     // Move on to the next marker
     _markerNumber++;
   }
 
+  /*
+   * A function called when we press the calculate route button to
+   * compute a trip/cycle using the markers.
+   */
   void _calculateRoute() {
     _clear(false);
     _calcFinished = false;
@@ -486,7 +504,11 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  // numIteration is 1 based
+  /*
+   * The actual function that computes a Hamiltonian cycle by
+   * recursively using the shortest path to each marker's neareast neighbor.
+   * numIteration is 1 based.
+   */
   void _calcRouteHelper(MarkerId markerIdStart, int numIteration) async {
     if (numIteration > _markers.length) {
       _calcFinished = true;
@@ -583,23 +605,14 @@ class _MapScreenState extends State<MapScreen> {
     _mins += minsToAdd;
 
     _formatDistanceTime();
+    _drawPoly(markerIdStart);
 
-    PolylineId currPolyID = PolylineId(markerIdStart.value);
-    Polyline currPoly;
-    setState(() {
-      currPoly = Polyline(
-        polylineId: currPolyID,
-        color: Colors.redAccent,
-        width: 5,
-        points: _info!.polylinePoints
-            .map((e) => LatLng(e.latitude, e.longitude))
-            .toList(),
-      );
-      _polylines[currPolyID] = currPoly;
-    });
     _calcRouteHelper(nearestMarkerId, ++numIteration);
   }
 
+  /*
+   * A helper function that clears the selected existing states.
+   */
   void _clear(bool clearMarker) {
     setState(() {
       if (clearMarker) {
@@ -623,6 +636,25 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
+  /*
+   * A helper function that removes the current trip from the trips
+   * hashtable.
+   */
+  void _removeTrip(String currMarkerIDValue) {
+    // Subtract trip info from total route
+    _days -= _trips[currMarkerIDValue]!["days"]!.toInt();
+    _hours -= _trips[currMarkerIDValue]!["hours"]!.toInt();
+    _mins -= _trips[currMarkerIDValue]!["mins"]!.toInt();
+    _miles -= _trips[currMarkerIDValue]!["miles"]!;
+    _feet -= _trips[currMarkerIDValue]!["feet"]!.toInt();
+    // Remove trip
+    _trips.removeWhere((key, value) => key == currMarkerIDValue);
+  }
+
+  /*
+   * A helper function that gets the directions from the Google Maps API,
+   * parses it, displays the route, and adds to the trips hashtable.
+   */
   void _getDirections(MarkerId markerIdStart, MarkerId markerIdEnd) async {
     // Get directions
     try {
@@ -685,7 +717,15 @@ class _MapScreenState extends State<MapScreen> {
     _trips[markerIdStart.value] = tripToAdd;
 
     _formatDistanceTime();
+    _drawPoly(markerIdStart);
+    _calcFinished = true;
+  }
 
+  /*
+   * A helper function that draws polylines starting at the markerID given in 
+   * the parameter.
+   */
+  void _drawPoly(MarkerId markerIdStart) {
     PolylineId currPolyID = PolylineId(markerIdStart.value);
     Polyline currPoly;
     setState(() {
@@ -699,9 +739,12 @@ class _MapScreenState extends State<MapScreen> {
       );
       _polylines[currPolyID] = currPoly;
     });
-    _calcFinished = true;
   }
 
+  /*
+   * A helper function formats the distance and duration class fields in a human 
+   * readable form.
+   */
   void _formatDistanceTime() {
     if ((_feet + 5280 * _miles) < 1000) {
       _distanceText = "$_feet ft";
@@ -731,6 +774,10 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  /*
+   * This function displays the search predictions when user types for a
+   * location.
+   */
   Future<void> _displayPrediction(Prediction? p) async {
     try {
       PlacesDetailsResponse detail =
@@ -760,6 +807,9 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  /*
+   * The main screen UI.
+   */
   @override
   Widget build(BuildContext context) {
     _context = context;
