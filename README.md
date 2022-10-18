@@ -12,5 +12,5 @@ This app can also showcase the Neareast Neighbor Algorithm in the famous Traveli
 
 App demo link: https://youtu.be/Lx8pPVlFG5w
 
-## Development Journey
+## Documentation
 https://docs.google.com/document/d/1S9F4jyB14in0o-ghQ4gAT7qFaA8Aqj-T7Nxrm9powQQ/edit
