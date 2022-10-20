@@ -1,9 +1,10 @@
-/*
- * This file contains various pop up dialogs.
- */
+///
+/// This file contains various pop up dialogs.
+///
 
 import 'package:flutter/material.dart';
 
+/// Help page pop-up dialog
 Future<void> showHelpDialog(BuildContext context) async {
   return showDialog<void>(
     context: context,
@@ -48,6 +49,7 @@ Future<void> showHelpDialog(BuildContext context) async {
   );
 }
 
+/// Search error pop-up dialog
 Future<void> showSearchErrorDialog(BuildContext context) async {
   return showDialog<void>(
     context: context,
@@ -75,6 +77,7 @@ Future<void> showSearchErrorDialog(BuildContext context) async {
   );
 }
 
+/// Route error pop-up dialog
 Future<void> showRouteErrorDialog(BuildContext context) async {
   return showDialog<void>(
     context: context,

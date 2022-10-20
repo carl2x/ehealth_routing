@@ -1,7 +1,3 @@
-/*
- * The main file where the app and its homescreen reside.
- */
-
 import 'package:ehealth_routing/directions_model.dart';
 import 'package:ehealth_routing/directions_repository.dart';
 import 'package:ehealth_routing/popups.dart';
@@ -15,17 +11,17 @@ import 'package:flutter_google_places/flutter_google_places.dart';
 import 'package:google_maps_webservice/places.dart';
 //import 'package:geocoding/geocoding.dart';
 
-// Main is the first function called when the app is run.
+/// Main is the first function called when the app is run.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FlutterConfig.loadEnvVariables();
   runApp(const MyApp());
 }
 
-/*
- * This creates a main stateless widget meaning that all its properties are
- * immutable and final. This is the foundation we will build upon. 
- */
+/// The main file where the app and its homescreen reside.
+///
+/// This creates a main stateless widget meaning that all its properties are
+/// immutable and final. This is the foundation we will build upon.
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
@@ -43,9 +39,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-/*
- * This creates a stateful widget that is essentially our main program.
- */
+/// This creates a stateful widget that is essentially our main program.
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
 
@@ -53,9 +47,7 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
-/*
- * This creates a state that stores the logic and internal state of our program.
- */
+/// This creates a state that stores the logic and internal state of our program.
 class _MapScreenState extends State<MapScreen> {
   static const _initialCameraPosition = CameraPosition(
     target: LatLng(40.4237, -86.9212),
@@ -148,8 +140,8 @@ class _MapScreenState extends State<MapScreen> {
     return await Geolocator.getCurrentPosition();
   }
 
-  // This function uses the geolocator package to get current location
-  // and also updates the camera.
+  /// This function uses the geolocator package to get current location
+  /// and also updates the camera.
   void _getCurrentLocation() async {
     await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
         .then((Position position) async {
@@ -169,9 +161,7 @@ class _MapScreenState extends State<MapScreen> {
     }).catchError((e) {});
   }
 
-  /*
-   * A function called when we add a new marker to the map in manual mode.
-   */
+  /// A function called when we add a new marker to the map in manual mode.
   void _addMarkerManual(LatLng pos) async {
     MarkerId currMarkerID = MarkerId(_markerNumber.toString());
     Marker? marker;
@@ -381,10 +371,8 @@ class _MapScreenState extends State<MapScreen> {
     _markerNumber++;
   }
 
-  /*
-   * A function called when we add a new marker to the map in the auto routing 
-   * (Travelling Salesman) mode.
-   */
+  /// A function called when we add a new marker to the map in the auto routing
+  /// (Travelling Salesman) mode.
   void _addMarkerAuto(LatLng pos) async {
     MarkerId currMarkerID = MarkerId(_markerNumber.toString());
     Marker? marker;
@@ -482,10 +470,8 @@ class _MapScreenState extends State<MapScreen> {
     _markerNumber++;
   }
 
-  /*
-   * A function called when we press the calculate route button to
-   * compute a trip/cycle using the markers.
-   */
+  /// A function called when we press the calculate route button to
+  /// compute a trip/cycle using the markers.
   void _calculateRoute() {
     _clear(false);
     _calcFinished = false;
@@ -504,11 +490,9 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  /*
-   * The actual function that computes a Hamiltonian cycle by
-   * recursively using the shortest path to each marker's neareast neighbor.
-   * numIteration is 1 based.
-   */
+  /// The actual function that computes a Hamiltonian cycle by
+  /// recursively using the shortest path to each marker's neareast neighbor.
+  /// numIteration is 1 based.
   void _calcRouteHelper(MarkerId markerIdStart, int numIteration) async {
     if (numIteration > _markers.length) {
       _calcFinished = true;
@@ -610,9 +594,7 @@ class _MapScreenState extends State<MapScreen> {
     _calcRouteHelper(nearestMarkerId, ++numIteration);
   }
 
-  /*
-   * A helper function that clears the selected existing states.
-   */
+  /// A helper function that clears the selected existing states.
   void _clear(bool clearMarker) {
     setState(() {
       if (clearMarker) {
@@ -636,10 +618,8 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
-  /*
-   * A helper function that removes the current trip from the trips
-   * hashtable.
-   */
+  /// A helper function that removes the current trip from the trips
+  /// hashtable.
   void _removeTrip(String currMarkerIDValue) {
     // Subtract trip info from total route
     _days -= _trips[currMarkerIDValue]!["days"]!.toInt();
@@ -651,10 +631,8 @@ class _MapScreenState extends State<MapScreen> {
     _trips.removeWhere((key, value) => key == currMarkerIDValue);
   }
 
-  /*
-   * A helper function that gets the directions from the Google Maps API,
-   * parses it, displays the route, and adds to the trips hashtable.
-   */
+  /// A helper function that gets the directions from the Google Maps API,
+  /// parses it, displays the route, and adds to the trips hashtable.
   void _getDirections(MarkerId markerIdStart, MarkerId markerIdEnd) async {
     // Get directions
     try {
@@ -721,10 +699,8 @@ class _MapScreenState extends State<MapScreen> {
     _calcFinished = true;
   }
 
-  /*
-   * A helper function that draws polylines starting at the markerID given in 
-   * the parameter.
-   */
+  /// A helper function that draws polylines starting at the markerID given in
+  /// the parameter.
   void _drawPoly(MarkerId markerIdStart) {
     PolylineId currPolyID = PolylineId(markerIdStart.value);
     Polyline currPoly;
@@ -741,10 +717,8 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
-  /*
-   * A helper function that formats the distance and duration class fields in a 
-   * human readable form.
-   */
+  /// A helper function that formats the distance and duration class fields in a
+  /// human readable form.
   void _formatDistanceTime() {
     if ((_feet + 5280 * _miles) < 1000) {
       _distanceText = "$_feet ft";
@@ -774,10 +748,8 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  /*
-   * This function displays the search predictions when user types for a
-   * location.
-   */
+  /// This function displays the search predictions when user types for a
+  /// location.
   Future<void> _displayPrediction(Prediction? p) async {
     try {
       PlacesDetailsResponse detail =
@@ -807,9 +779,7 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  /*
-   * The main screen UI.
-   */
+  /// The main screen UI.
   @override
   Widget build(BuildContext context) {
     _context = context;

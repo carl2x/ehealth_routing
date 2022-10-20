@@ -1,12 +1,10 @@
-/*
- * This class handles the url requeset to retrieve reponse from Google servers.
- */
 import 'package:flutter_config/flutter_config.dart';
 
 import 'package:dio/dio.dart';
 import 'package:ehealth_routing/directions_model.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+/// This class handles the url requeset to retrieve reponse from Google servers.
 class DirectionsRepository {
   static const String _baseUrl =
       'https://maps.googleapis.com/maps/api/directions/json?';
